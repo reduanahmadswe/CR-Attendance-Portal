@@ -40,7 +40,7 @@ export const generateAttendancePDF = async (record: PopulatedAttendanceRecord): 
       },
     });
 
-    return pdf;
+    return Buffer.from(pdf);
   } finally {
     await browser.close();
   }

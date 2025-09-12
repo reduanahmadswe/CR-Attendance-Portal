@@ -608,8 +608,10 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
         '[PDF DOWNLOAD] Starting download for attendance:',
         attendanceId
       )
+      const baseUrl =
+        import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
       const response = await fetch(
-        `http://localhost:4000/api/attendance/${attendanceId}/download`,
+        `${baseUrl}/attendance/${attendanceId}/download`,
         {
           method: 'GET',
           headers: {
