@@ -36,6 +36,7 @@ import type { RootState } from '@/lib/simpleStore'
 import type { AttendanceRecord, Student } from '@/types'
 import {
   BookOpen,
+  Calendar,
   CheckCircle,
   Clock,
   FileText,
@@ -434,12 +435,18 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Date</label>
-                    <Input
-                      {...register('date', { required: true })}
-                      type="date"
-                      max={new Date().toISOString().split('T')[0]}
-                      defaultValue={new Date().toISOString().split('T')[0]}
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      <Input
+                        {...register('date', { required: true })}
+                        type="date"
+                        className="pl-10"
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      You can select any date (past, present, or future)
+                    </p>
                   </div>
                 </div>
 
@@ -480,55 +487,64 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {students.map((student: Student) => (
-                            <TableRow key={student._id}>
-                              <TableCell>{student.studentId}</TableCell>
-                              <TableCell className="font-medium">
-                                {student.name}
-                              </TableCell>
-                              <TableCell>{student.email}</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                      attendanceData[student._id] === 'present'
-                                        ? 'default'
-                                        : 'outline'
-                                    }
-                                    onClick={() =>
-                                      handleAttendanceChange(
-                                        student._id,
+                          {[...students]
+                            .sort((a, b) => {
+                              const idA = a.studentId || ''
+                              const idB = b.studentId || ''
+                              return idA.localeCompare(idB, undefined, {
+                                numeric: true,
+                              })
+                            })
+                            .map((student: Student) => (
+                              <TableRow key={student._id}>
+                                <TableCell>{student.studentId}</TableCell>
+                                <TableCell className="font-medium">
+                                  {student.name}
+                                </TableCell>
+                                <TableCell>{student.email}</TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={
+                                        attendanceData[student._id] ===
                                         'present'
-                                      )
-                                    }
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Present
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                      attendanceData[student._id] === 'absent'
-                                        ? 'destructive'
-                                        : 'outline'
-                                    }
-                                    onClick={() =>
-                                      handleAttendanceChange(
-                                        student._id,
-                                        'absent'
-                                      )
-                                    }
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Absent
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                          ? 'default'
+                                          : 'outline'
+                                      }
+                                      onClick={() =>
+                                        handleAttendanceChange(
+                                          student._id,
+                                          'present'
+                                        )
+                                      }
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Present
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={
+                                        attendanceData[student._id] === 'absent'
+                                          ? 'destructive'
+                                          : 'outline'
+                                      }
+                                      onClick={() =>
+                                        handleAttendanceChange(
+                                          student._id,
+                                          'absent'
+                                        )
+                                      }
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Absent
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
                         </TableBody>
                       </Table>
                     </div>

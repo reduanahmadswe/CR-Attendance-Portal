@@ -58,8 +58,11 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === '
 // CORS configuration - must be before other middleware
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
+        // Allow requests with no origin (like mobile apps, Postman, direct server calls, etc.)
+        if (!origin) {
+            console.log('[CORS] Request with no origin - allowing');
+            return callback(null, true);
+        }
 
         const allowedOrigins = process.env.NODE_ENV === 'production'
             ? [process.env.FRONTEND_URL || 'http://localhost:5173']
@@ -73,9 +76,12 @@ app.use(cors({
             ];
 
         if (allowedOrigins.includes(origin)) {
+            console.log(`[CORS] Origin ${origin} - allowed`);
             callback(null, true);
         } else {
-            callback(null, process.env.NODE_ENV === 'development'); // Allow all in development
+            const isDevMode = process.env.NODE_ENV === 'development';
+            console.log(`[CORS] Origin ${origin} - ${isDevMode ? 'allowed (dev mode)' : 'blocked'}`);
+            callback(null, isDevMode); // Allow all in development
         }
     },
     credentials: true,
@@ -91,7 +97,10 @@ app.use(cors({
         'X-File-Name'
     ],
     exposedHeaders: ['Set-Cookie'],
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    // Additional options for better CORS handling
+    maxAge: 86400, // Cache preflight response for 24 hours
+    preflightContinue: false
 }));
 
 // Handle preflight requests explicitly
@@ -106,15 +115,18 @@ app.options('*', (req, res) => {
 // Debug middleware for CORS (development only)
 if (process.env.NODE_ENV === 'development') {
     app.use((req, res, next) => {
-        console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-        if (req.method === 'OPTIONS') {
-            console.log('[CORS] Preflight request received');
+        // Only log if there are actual CORS issues
+        const origin = req.headers.origin;
+        if (!origin && req.method !== 'GET') {
+            console.log(`[CORS] ${req.method} ${req.path} - No origin header`);
+        } else if (origin && req.method === 'OPTIONS') {
+            console.log(`[CORS] Preflight ${req.path} - Origin: ${origin}`);
         }
         next();
     });
 }
 
-// Manual CORS headers as fallback
+// Enhanced manual CORS headers as fallback
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
@@ -126,16 +138,26 @@ app.use((req, res, next) => {
         'http://127.0.0.1:3000'
     ];
 
-    // Set CORS headers
-    if (!origin || allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    // Always set CORS headers for better compatibility
+    if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+        // For requests without origin (server-to-server, mobile apps, etc.)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (process.env.NODE_ENV === 'development') {
+        // Allow any origin in development
+        res.setHeader('Access-Control-Allow-Origin', origin);
     }
+
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, authorization, X-Requested-With, Accept, Origin, Cache-Control, X-File-Name');
+    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache for 24 hours
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
+        console.log(`[CORS] Preflight request from ${origin || 'unknown origin'}`);
         res.status(200).end();
         return;
     }
@@ -191,24 +213,27 @@ app.use('*', (req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
+// For Vercel deployment
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 4000;
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+    const server = app.listen(PORT, () => {
+        console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err: Error) => {
-    console.log(`Unhandled Rejection: ${err.message}`);
-    server.close(() => {
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err: Error) => {
+        console.log(`Unhandled Rejection: ${err.message}`);
+        server.close(() => {
+            process.exit(1);
+        });
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err: Error) => {
+        console.log(`Uncaught Exception: ${err.message}`);
         process.exit(1);
     });
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err: Error) => {
-    console.log(`Uncaught Exception: ${err.message}`);
-    process.exit(1);
-});
+}
 
 export default app;

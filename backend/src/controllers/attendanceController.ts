@@ -261,11 +261,27 @@ export const getAttendanceStats = asyncHandler(async (req: Request, res: Respons
 export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
+    // Debug authentication
+    console.log('PDF Download - Auth headers:', req.headers.authorization);
+    console.log('PDF Download - User:', req.user);
+
     const record = await AttendanceRecord.findById(id)
-        .populate('sectionId', 'name code')
-        .populate('courseId', 'name code')
-        .populate('takenBy', 'name email')
-        .populate('attendees.studentId', 'studentId name email');
+        .populate({
+            path: 'sectionId',
+            select: 'name code'
+        })
+        .populate({
+            path: 'courseId',
+            select: 'name code'
+        })
+        .populate({
+            path: 'takenBy',
+            select: 'name email'
+        })
+        .populate({
+            path: 'attendees.studentId',
+            select: 'studentId name email'
+        });
 
     if (!record) {
         throw new AppError('Attendance record not found', 404);
@@ -282,9 +298,22 @@ export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, r
     try {
         const pdfBuffer = await generateAttendancePDF(record as any);
 
-        const sectionName = (record.sectionId as any).name;
-        const courseName = (record.courseId as any).name;
-        const filename = `attendance-${sectionName}-${courseName}-${new Date(record.date).toISOString().split('T')[0]}.pdf`;
+        // Debug populated data
+        console.log('Section data:', record.sectionId);
+        console.log('Course data:', record.courseId);
+
+        const sectionName = (record.sectionId as any)?.name || 'Unknown-Section';
+        const courseCode = (record.courseId as any)?.code || 'Unknown-Course';
+        const date = new Date(record.date).toISOString().split('T')[0];
+
+        // Sanitize filename by removing/replacing special characters
+        const sanitizedSectionName = sectionName.replace(/[^a-zA-Z0-9-]/g, '-');
+        const sanitizedCourseCode = courseCode.replace(/[^a-zA-Z0-9-]/g, '-');
+
+        // Format: SectionName_CourseCode_Date.pdf
+        const filename = `${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
+
+        console.log('Generated filename:', filename);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -301,10 +330,22 @@ export const streamAttendancePDF = asyncHandler(async (req: Request, res: Respon
     const { id } = req.params;
 
     const record = await AttendanceRecord.findById(id)
-        .populate('sectionId', 'name code')
-        .populate('courseId', 'name code')
-        .populate('takenBy', 'name email')
-        .populate('attendees.studentId', 'studentId name email');
+        .populate({
+            path: 'sectionId',
+            select: 'name code'
+        })
+        .populate({
+            path: 'courseId',
+            select: 'name code'
+        })
+        .populate({
+            path: 'takenBy',
+            select: 'name email'
+        })
+        .populate({
+            path: 'attendees.studentId',
+            select: 'studentId name email'
+        });
 
     if (!record) {
         throw new AppError('Attendance record not found', 404);
@@ -321,9 +362,22 @@ export const streamAttendancePDF = asyncHandler(async (req: Request, res: Respon
     try {
         const pdfBuffer = await generateAttendancePDF(record as any);
 
-        const sectionName = (record.sectionId as any).name;
-        const courseName = (record.courseId as any).name;
-        const filename = `attendance-${sectionName}-${courseName}-${new Date(record.date).toISOString().split('T')[0]}.pdf`;
+        // Debug populated data for stream
+        console.log('Stream - Section data:', record.sectionId);
+        console.log('Stream - Course data:', record.courseId);
+
+        const sectionName = (record.sectionId as any)?.name || 'Unknown-Section';
+        const courseCode = (record.courseId as any)?.code || 'Unknown-Course';
+        const date = new Date(record.date).toISOString().split('T')[0];
+
+        // Sanitize filename by removing/replacing special characters
+        const sanitizedSectionName = sectionName.replace(/[^a-zA-Z0-9-]/g, '-');
+        const sanitizedCourseCode = courseCode.replace(/[^a-zA-Z0-9-]/g, '-');
+
+        // Format: SectionName_CourseCode_Date.pdf
+        const filename = `${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
+
+        console.log('Stream - Generated filename:', filename);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);

@@ -22,6 +22,15 @@ export default defineConfig({
         secure: false,
         ws: true,
         timeout: 10000,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Ensure origin header is properly set
+            proxyReq.setHeader('origin', 'http://localhost:5173');
+          });
+        },
+        headers: {
+          'origin': 'http://localhost:5173'
+        }
       },
     },
   },

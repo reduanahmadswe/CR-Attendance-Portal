@@ -20,7 +20,7 @@ import type {
 import type { RootState } from './simpleStore';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
         const state = getState() as RootState;

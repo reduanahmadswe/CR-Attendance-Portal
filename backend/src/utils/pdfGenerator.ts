@@ -322,7 +322,6 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
             <th>Student ID</th>
             <th>Name</th>
             <th>Status</th>
-            <th>Note</th>
           </tr>
         </thead>
         <tbody>
@@ -336,7 +335,6 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
                   ${attendee.status}
                 </span>
               </td>
-              <td>${attendee.note || '-'}</td>
             </tr>
           `).join('')}
         </tbody>

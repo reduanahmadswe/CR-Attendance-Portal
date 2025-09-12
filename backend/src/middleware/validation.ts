@@ -121,7 +121,7 @@ export const schemas = {
     attendanceCreate: Joi.object({
         sectionId: Joi.string().required(),
         courseId: Joi.string().required(),
-        date: Joi.date().max(new Date()).required(),
+        date: Joi.date().required(),
         attendees: Joi.array().items(
             Joi.object({
                 studentId: Joi.string().required(),
