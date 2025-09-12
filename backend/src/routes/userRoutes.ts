@@ -12,7 +12,7 @@ router.use(authorize('admin'));
 router.post('/', validate(schemas.userCreate), userController.createUser);
 router.get('/', validateQuery(schemas.pagination), userController.getUsers);
 router.get('/:id', userController.getUser);
-router.put('/:id', userController.updateUser);
+router.put('/:id', validate(schemas.userUpdate), userController.updateUser);
 router.delete('/:id', userController.deleteUser);
 router.put('/:id/reset-password', userController.resetUserPassword);
 

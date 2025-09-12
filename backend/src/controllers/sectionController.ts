@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Course, Section, Student } from '../models';
+import { Course, Section, Student, User } from '../models';
 import { ApiResponse, PaginatedResponse } from '../types';
 import { AppError, asyncHandler } from '../utils/errorHandler';
 
@@ -95,23 +95,38 @@ export const updateSection = asyncHandler(async (req: Request, res: Response) =>
 export const deleteSection = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
+    console.log('[DELETE SECTION] Attempting to delete section:', id);
+
     const section = await Section.findById(id);
 
     if (!section) {
+        console.log('[DELETE SECTION] Section not found:', id);
         throw new AppError('Section not found', 404);
     }
 
+    console.log('[DELETE SECTION] Section found:', { id: section._id, name: section.name });
+
     // Check if section has courses or students
-    const [courseCount, studentCount] = await Promise.all([
+    const [courseCount, studentCount, userCount] = await Promise.all([
         Course.countDocuments({ sectionId: id }),
         Student.countDocuments({ sectionId: id }),
+        User.countDocuments({ sectionId: id }),
     ]);
 
-    if (courseCount > 0 || studentCount > 0) {
-        throw new AppError('Cannot delete section with existing courses or students', 400);
+    console.log('[DELETE SECTION] Related data counts:', {
+        courses: courseCount,
+        students: studentCount,
+        users: userCount
+    });
+
+    if (courseCount > 0 || studentCount > 0 || userCount > 0) {
+        const errorMessage = `Cannot delete section "${section.name}". It has ${courseCount} course(s), ${studentCount} student(s), and ${userCount} user(s) assigned. Please remove all related data first.`;
+        console.log('[DELETE SECTION] Cannot delete - has dependencies:', errorMessage);
+        throw new AppError(errorMessage, 400);
     }
 
     await Section.findByIdAndDelete(id);
+    console.log('[DELETE SECTION] Section deleted successfully:', id);
 
     const response: ApiResponse = {
         success: true,

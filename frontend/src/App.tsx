@@ -17,7 +17,9 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="attendance-portal-theme">
       <AuthProvider>
-        <Router>
+        <Router
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
@@ -25,6 +27,14 @@ function App() {
               element={
                 <PrivateRoute requiredRole="admin">
                   <AdminDashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/cr"
+              element={
+                <PrivateRoute requiredRole="cr">
+                  <CRDashboard />
                 </PrivateRoute>
               }
             />

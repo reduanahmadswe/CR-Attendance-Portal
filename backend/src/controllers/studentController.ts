@@ -7,20 +7,30 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
     const { sectionId } = req.params;
     const { studentId, name, email, courses = [] } = req.body;
 
+    console.log('[STUDENT CREATE] Section ID:', sectionId);
+    console.log('[STUDENT CREATE] Request body:', { studentId, name, email, courses });
+
     // Verify section exists
     const section = await Section.findById(sectionId);
     if (!section) {
+        console.log('[STUDENT CREATE] Section not found:', sectionId);
         throw new AppError('Section not found', 404);
     }
 
+    console.log('[STUDENT CREATE] Section found:', section.name);
+
     // Verify courses belong to the section
     if (courses.length > 0) {
+        console.log('[STUDENT CREATE] Checking courses:', courses);
         const coursesCount = await Course.countDocuments({
             _id: { $in: courses },
             sectionId,
         });
 
+        console.log('[STUDENT CREATE] Courses found:', coursesCount, 'Expected:', courses.length);
+
         if (coursesCount !== courses.length) {
+            console.log('[STUDENT CREATE] Course validation failed');
             throw new AppError('Some courses do not belong to this section', 400);
         }
     }

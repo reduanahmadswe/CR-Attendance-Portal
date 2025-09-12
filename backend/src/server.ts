@@ -35,36 +35,60 @@ app.use(helmet());
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: process.env.NODE_ENV === 'production' ? 100 : 1000, // More requests in development
     message: 'Too many requests from this IP, please try again later.',
 });
-app.use('/api/', limiter);
+
+// Apply rate limiting only in production or if specifically enabled
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
+    app.use('/api/', limiter);
+}
 
 // Stricter rate limiting for auth endpoints
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // limit each IP to 5 auth requests per windowMs
+    max: process.env.NODE_ENV === 'production' ? 10 : 100, // More auth requests in development
     message: 'Too many authentication attempts, please try again later.',
 });
-app.use('/api/auth/', authLimiter);
+
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
+    app.use('/api/auth/', authLimiter);
+}
 
 // CORS configuration - must be before other middleware
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || 'http://localhost:5173',
-        'http://localhost:3000',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:3000'
-    ],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        const allowedOrigins = process.env.NODE_ENV === 'production'
+            ? [process.env.FRONTEND_URL || 'http://localhost:5173']
+            : [
+                'http://localhost:5173',
+                'http://localhost:5174',
+                'http://localhost:3000',
+                'http://127.0.0.1:5173',
+                'http://127.0.0.1:5174',
+                'http://127.0.0.1:3000'
+            ];
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, process.env.NODE_ENV === 'development'); // Allow all in development
+        }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
         'Content-Type',
         'Authorization',
         'authorization',
         'X-Requested-With',
         'Accept',
-        'Origin'
+        'Origin',
+        'Cache-Control',
+        'X-File-Name'
     ],
     exposedHeaders: ['Set-Cookie'],
     optionsSuccessStatus: 200
@@ -95,18 +119,26 @@ app.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
         'http://localhost:5173',
+        'http://localhost:5174',
         'http://localhost:3000',
         'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
         'http://127.0.0.1:3000'
     ];
 
-    if (allowedOrigins.includes(origin || '')) {
+    // Set CORS headers
+    if (!origin || allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin || '*');
     }
-
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
 
     next();
 });

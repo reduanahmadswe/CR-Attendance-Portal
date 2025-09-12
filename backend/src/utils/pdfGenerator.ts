@@ -6,66 +6,73 @@ import { IStudent } from '../models/Student';
 import { IUser } from '../models/User';
 
 interface PopulatedAttendanceRecord extends Omit<IAttendanceRecord, 'sectionId' | 'courseId' | 'takenBy' | 'attendees'> {
-    sectionId: ISection;
-    courseId: ICourse;
-    takenBy: IUser;
-    attendees: Array<{
-        studentId: IStudent;
-        status: 'present' | 'absent' | 'late' | 'excused';
-        note?: string;
-    }>;
+  sectionId: ISection;
+  courseId: ICourse;
+  takenBy: IUser;
+  attendees: Array<{
+    studentId: IStudent;
+    status: 'present' | 'absent' | 'late' | 'excused';
+    note?: string;
+  }>;
 }
 
 export const generateAttendancePDF = async (record: PopulatedAttendanceRecord): Promise<Buffer> => {
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    const html = generateAttendanceHTML(record);
+
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '1cm',
+        bottom: '1cm',
+        left: '1cm',
+        right: '1cm',
+      },
     });
 
-    try {
-        const page = await browser.newPage();
-
-        const html = generateAttendanceHTML(record);
-
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-
-        const pdf = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: {
-                top: '1cm',
-                bottom: '1cm',
-                left: '1cm',
-                right: '1cm',
-            },
-        });
-
-        return pdf;
-    } finally {
-        await browser.close();
-    }
+    return pdf;
+  } finally {
+    await browser.close();
+  }
 };
 
 const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
-    const date = new Date(record.date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+  const date = new Date(record.date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-    const time = new Date(record.createdAt).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+  const time = new Date(record.createdAt).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
-    const presentCount = record.attendees.filter(a => a.status === 'present').length;
-    const absentCount = record.attendees.filter(a => a.status === 'absent').length;
-    const lateCount = record.attendees.filter(a => a.status === 'late').length;
-    const excusedCount = record.attendees.filter(a => a.status === 'excused').length;
-    const totalStudents = record.attendees.length;
+  const presentCount = record.attendees.filter(a => a.status === 'present').length;
+  const absentCount = record.attendees.filter(a => a.status === 'absent').length;
+  const lateCount = record.attendees.filter(a => a.status === 'late').length;
+  const excusedCount = record.attendees.filter(a => a.status === 'excused').length;
+  const totalStudents = record.attendees.length;
 
-    return `
+  // Sort attendees by student ID (smallest to biggest)
+  const sortedAttendees = [...record.attendees].sort((a, b) => {
+    const idA = a.studentId.studentId || '';
+    const idB = b.studentId.studentId || '';
+    return idA.localeCompare(idB, undefined, { numeric: true });
+  });
+
+  return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -244,6 +251,12 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
           font-size: 14px;
         }
         
+        .signature-label strong {
+          color: #374151;
+          display: block;
+          margin-top: 4px;
+        }
+        
         .generated-info {
           text-align: center;
           color: #9ca3af;
@@ -279,7 +292,7 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
         </div>
         <div class="info-box">
           <div class="info-label">Taken By</div>
-          <div class="info-value">${record.takenBy.name} (${record.takenBy.email})</div>
+          <div class="info-value">${record.takenBy.name}</div>
         </div>
       </div>
       
@@ -308,18 +321,16 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
             <th>#</th>
             <th>Student ID</th>
             <th>Name</th>
-            <th>Email</th>
             <th>Status</th>
             <th>Note</th>
           </tr>
         </thead>
         <tbody>
-          ${record.attendees.map((attendee, index) => `
+          ${sortedAttendees.map((attendee, index) => `
             <tr>
               <td>${index + 1}</td>
               <td>${attendee.studentId.studentId}</td>
               <td>${attendee.studentId.name}</td>
-              <td>${attendee.studentId.email}</td>
               <td>
                 <span class="status-badge status-${attendee.status}">
                   ${attendee.status}
@@ -335,7 +346,7 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
         <div class="signature-section">
           <div class="signature-box">
             <div class="signature-line"></div>
-            <div class="signature-label">Class Representative Signature</div>
+            <div class="signature-label">Class Representative Signature<br/><strong>${record.takenBy.name}</strong></div>
           </div>
           <div class="signature-box">
             <div class="signature-line"></div>

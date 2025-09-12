@@ -1,3 +1,4 @@
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,17 +28,17 @@ import {
 import {
   useCreateAttendanceRecordMutation,
   useGetAttendanceRecordsQuery,
+  useGetCourseStudentsQuery,
   useGetSectionCoursesQuery,
   useGetSectionStudentsQuery,
-  useGetSectionsQuery,
 } from '@/lib/apiSlice'
 import type { RootState } from '@/lib/simpleStore'
-import { clearCredentials } from '@/lib/simpleStore'
 import type { AttendanceRecord, Student } from '@/types'
 import {
   BookOpen,
   CheckCircle,
   Clock,
+  FileText,
   History,
   LogOut,
   Plus,
@@ -46,8 +47,10 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { useAuth } from '../context/AuthContext'
 
 interface AttendanceFormData {
   course: string
@@ -56,28 +59,105 @@ interface AttendanceFormData {
 
 export function CRDashboard() {
   const user = useSelector((state: RootState) => state.auth.user)
-  const dispatch = useDispatch()
+  const auth = useAuth()
+  const { isLoading, user: authUser } = auth
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    dispatch(clearCredentials())
-    navigate('/login')
+  // Add loading state check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Use authUser from context if available, fallback to Redux user
+  const currentUser = authUser || user
+
+  const handleLogout = async () => {
+    console.log('[CR DASHBOARD] Logout button clicked')
+    console.log('[CR DASHBOARD] Auth object:', auth)
+
+    try {
+      if (auth?.logout) {
+        console.log('[CR DASHBOARD] Calling auth.logout()')
+        await auth.logout()
+        console.log('[CR DASHBOARD] auth.logout() completed')
+      } else {
+        console.log('[CR DASHBOARD] auth.logout not available')
+      }
+      console.log('[CR DASHBOARD] Navigating to login')
+      // Force redirect using window.location for immediate effect
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('[CR DASHBOARD] Logout failed:', error)
+      // Still navigate to login even if logout fails
+      window.location.href = '/login'
+    }
   }
 
   const handleNavigateToHistory = () => {
     navigate('/attendance-history')
   }
 
-  if (!user || user.role !== 'cr') {
-    return <div className="p-6">Unauthorized access</div>
+  if (!currentUser) {
+    console.log('[CR DASHBOARD] No current user, redirecting to login')
+    navigate('/login')
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">
+            Redirecting to login...
+          </p>
+        </div>
+      </div>
+    )
   }
 
-  if (!user.sectionId) {
-    return <div className="p-6">No section assigned</div>
+  if (currentUser.role !== 'cr') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">
+            Unauthorized Access
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            You don't have permission to access this page.
+          </p>
+          <Button onClick={() => navigate('/login')} className="mt-4">
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentUser.sectionId) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-yellow-600 mb-2">
+            No Section Assigned
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Please contact admin to assign you to a section.
+          </p>
+          <Button onClick={() => navigate('/login')} className="mt-4">
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const sectionId =
-    typeof user.sectionId === 'string' ? user.sectionId : user.sectionId._id
+    typeof currentUser.sectionId === 'string'
+      ? currentUser.sectionId
+      : currentUser.sectionId._id
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -89,7 +169,7 @@ export function CRDashboard() {
               CR Dashboard
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Welcome, {user.name}
+              Welcome, {currentUser.name}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -117,9 +197,9 @@ export function CRDashboard() {
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Managing attendance for section:{' '}
-            {typeof user.sectionId === 'string'
-              ? user.sectionId
-              : `${user.sectionId.name} ${user.sectionId.code ? `(${user.sectionId.code})` : ''}`}
+            {typeof currentUser.sectionId === 'string'
+              ? currentUser.sectionId
+              : `${currentUser.sectionId.name} ${currentUser.sectionId.code ? `(${currentUser.sectionId.code})` : ''}`}
           </p>
         </div>
 
@@ -130,7 +210,9 @@ export function CRDashboard() {
         <TakeAttendanceSection sectionId={sectionId} />
 
         {/* Recent Attendance Records */}
-        <RecentAttendanceSection sectionId={sectionId} />
+        <ErrorBoundary>
+          <RecentAttendanceSection sectionId={sectionId} />
+        </ErrorBoundary>
       </div>
     </div>
   )
@@ -138,14 +220,22 @@ export function CRDashboard() {
 
 // CR Stats Cards Component
 const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
-  const { data: studentsResponse } = useGetSectionStudentsQuery({ sectionId })
-  const { data: attendanceResponse } = useGetAttendanceRecordsQuery({
-    sectionId,
-  })
-  const { data: sectionsResponse } = useGetSectionsQuery({})
+  const { data: studentsResponse } = useGetSectionStudentsQuery(
+    { sectionId },
+    { skip: !sectionId }
+  )
+  const { data: attendanceResponse } = useGetAttendanceRecordsQuery(
+    { sectionId },
+    { skip: !sectionId }
+  )
+  const { data: coursesResponse } = useGetSectionCoursesQuery(
+    { sectionId },
+    { skip: !sectionId }
+  )
 
   const students = studentsResponse?.data?.data || []
   const attendance = attendanceResponse?.data?.data || []
+  const courses = coursesResponse?.data?.data || []
 
   const todayAttendance = attendance.filter((record) => {
     const recordDate = new Date(record.date)
@@ -162,7 +252,7 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
     },
     {
       title: 'Available Courses',
-      value: sectionsResponse?.data?.data?.length || 0,
+      value: courses.length,
       icon: BookOpen,
       color: 'bg-green-500',
     },
@@ -207,15 +297,12 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
 
 // Take Attendance Section Component
 const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
-  const { data: studentsResponse } = useGetSectionStudentsQuery({ sectionId })
   const [createAttendanceRecord] = useCreateAttendanceRecordMutation()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [attendanceData, setAttendanceData] = useState<
     Record<string, 'present' | 'absent'>
   >({})
-
-  const students = studentsResponse?.data?.data || []
 
   // Get courses for the CR's section
   const { data: coursesResponse } = useGetSectionCoursesQuery(
@@ -224,28 +311,61 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
   )
   const courses = coursesResponse?.data?.data || []
 
+  // Get students for selected course only
+  const { data: courseStudentsResponse } = useGetCourseStudentsQuery(
+    { sectionId, courseId: selectedCourse },
+    { skip: !selectedCourse }
+  )
+  const students = courseStudentsResponse?.data?.data || []
+
   const { register, handleSubmit, reset } = useForm<AttendanceFormData>()
 
   const onSubmit = async (data: AttendanceFormData) => {
+    console.log('[ATTENDANCE] Submitting attendance data:', data)
+    console.log('[ATTENDANCE] Selected course state:', selectedCourse)
+    console.log('[ATTENDANCE] Students data:', students)
+    console.log('[ATTENDANCE] Attendance data:', attendanceData)
+
+    // Validate course selection
+    if (!selectedCourse) {
+      toast.error('Please select a course')
+      return
+    }
+
     try {
       const attendees = students.map((student: Student) => ({
         studentId: student._id,
         status: attendanceData[student._id] || ('absent' as const),
       }))
 
-      await createAttendanceRecord({
+      console.log('[ATTENDANCE] Sending attendees:', attendees)
+
+      // Ensure date is in correct format
+      const formattedDate = new Date(data.date).toISOString().split('T')[0]
+      console.log('[ATTENDANCE] Formatted date:', formattedDate)
+
+      const result = await createAttendanceRecord({
         sectionId: sectionId,
-        courseId: data.course,
-        date: data.date,
+        courseId: selectedCourse,
+        date: formattedDate,
         attendees,
       }).unwrap()
+
+      console.log('[ATTENDANCE] Success result:', result)
+      toast.success('Attendance recorded successfully!')
 
       setIsDialogOpen(false)
       setSelectedCourse('')
       setAttendanceData({})
       reset()
     } catch (error) {
-      console.error('Error creating attendance:', error)
+      console.error('[ATTENDANCE] Error creating attendance:', error)
+      const errorMessage =
+        error && typeof error === 'object' && 'data' in error
+          ? (error as { data?: { message?: string } }).data?.message ||
+            'Failed to record attendance'
+          : 'Failed to record attendance'
+      toast.error(errorMessage)
     }
   }
 
@@ -311,17 +431,13 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <input
-                      type="hidden"
-                      {...register('course')}
-                      value={selectedCourse}
-                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Date</label>
                     <Input
                       {...register('date', { required: true })}
                       type="date"
+                      max={new Date().toISOString().split('T')[0]}
                       defaultValue={new Date().toISOString().split('T')[0]}
                     />
                   </div>
@@ -452,12 +568,60 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
   })
 
   const attendance = attendanceResponse?.data?.data || []
-  const recentAttendance = attendance
+
+  // Defensive check to ensure attendance is an array
+  const safeAttendance = Array.isArray(attendance) ? attendance : []
+
+  const recentAttendance = [...safeAttendance]
+    .filter(
+      (record): record is AttendanceRecord =>
+        record &&
+        typeof record === 'object' &&
+        'date' in record &&
+        '_id' in record
+    )
     .sort(
       (a: AttendanceRecord, b: AttendanceRecord) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
     )
     .slice(0, 10)
+
+  const downloadPDF = async (attendanceId: string) => {
+    try {
+      console.log(
+        '[PDF DOWNLOAD] Starting download for attendance:',
+        attendanceId
+      )
+      const response = await fetch(
+        `http://localhost:4000/api/attendance/${attendanceId}/download`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to download PDF')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `attendance-${attendanceId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('PDF downloaded successfully!')
+    } catch (error) {
+      console.error('[PDF DOWNLOAD] Error:', error)
+      toast.error('Failed to download PDF')
+    }
+  }
 
   if (isLoading) return <div>Loading attendance records...</div>
 
@@ -477,13 +641,14 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                 <TableHead>Present</TableHead>
                 <TableHead>Absent</TableHead>
                 <TableHead>Attendance %</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentAttendance.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center text-gray-500 py-8"
                   >
                     No attendance records found. Start by taking attendance!
@@ -529,6 +694,17 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                         >
                           {attendancePercentage}%
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadPDF(record._id)}
+                          className="flex items-center gap-1"
+                        >
+                          <FileText className="h-3 w-3" />
+                          PDF
+                        </Button>
                       </TableCell>
                     </TableRow>
                   )

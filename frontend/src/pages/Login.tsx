@@ -7,10 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useAuth } from '@/context/AuthContext'
 import { useLoginMutation } from '@/lib/apiSlice'
-import { setCredentials, type RootState } from '@/lib/simpleStore'
+import { setCredentials } from '@/lib/simpleStore'
 import { useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -20,12 +21,18 @@ export function Login() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user } = useAuth()
   const [login, { isLoading }] = useLoginMutation()
 
   // Redirect if already authenticated
-  if (isAuthenticated) {
-    return <Navigate to="/admin" replace />
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') {
+      return <Navigate to="/admin" replace />
+    } else if (user.role === 'cr') {
+      return <Navigate to="/cr" replace />
+    } else {
+      return <Navigate to="/attendance-history" replace />
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +54,7 @@ export function Login() {
         if (result.data.user.role === 'admin') {
           navigate('/admin')
         } else if (result.data.user.role === 'cr') {
-          navigate('/cr-dashboard')
+          navigate('/cr')
         } else {
           navigate('/attendance-history')
         }

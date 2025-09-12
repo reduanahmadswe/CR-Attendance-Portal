@@ -63,7 +63,7 @@ import {
   useUpdateStudentMutation,
   useUpdateUserMutation,
 } from '@/lib/apiSlice'
-import { clearCredentials, type RootState } from '@/lib/simpleStore'
+import { type RootState } from '@/lib/simpleStore'
 import type {
   AttendanceRecord,
   Course,
@@ -88,21 +88,39 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useAuth } from '../context/AuthContext'
 
 function AdminDashboard() {
   const user = useSelector((state: RootState) => state.auth.user)
-  const dispatch = useDispatch()
+  const auth = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<
     'sections' | 'courses' | 'students' | 'users' | 'attendance'
   >('sections')
 
-  const handleLogout = () => {
-    dispatch(clearCredentials())
-    navigate('/login')
+  const handleLogout = async () => {
+    console.log('[ADMIN DASHBOARD] Logout button clicked')
+    console.log('[ADMIN DASHBOARD] Auth object:', auth)
+
+    try {
+      if (auth?.logout) {
+        console.log('[ADMIN DASHBOARD] Calling auth.logout()')
+        await auth.logout()
+        console.log('[ADMIN DASHBOARD] auth.logout() completed')
+      } else {
+        console.log('[ADMIN DASHBOARD] auth.logout not available')
+      }
+      console.log('[ADMIN DASHBOARD] Navigating to login')
+      // Force redirect using window.location for immediate effect
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('[ADMIN DASHBOARD] Logout failed:', error)
+      // Still navigate to login even if logout fails
+      window.location.href = '/login'
+    }
   }
 
   const handleNavigateToHistory = () => {
@@ -631,22 +649,32 @@ const StudentsManagement = () => {
     { sectionId: selectedSection },
     { skip: !selectedSection }
   )
+  const { data: coursesResponse } = useGetSectionCoursesQuery(
+    { sectionId: selectedSection },
+    { skip: !selectedSection }
+  )
   const [createStudent] = useCreateStudentMutation()
   const [updateStudent] = useUpdateStudentMutation()
   const [deleteStudent] = useDeleteStudentMutation()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
 
   const { register, handleSubmit, reset, setValue } =
     useForm<CreateStudentRequest>()
 
   const sections = sectionsResponse?.data?.data || []
   const students = studentsResponse?.data?.data || []
+  const courses = coursesResponse?.data?.data || []
 
   const onSubmit = async (data: CreateStudentRequest) => {
     try {
-      const studentData = { ...data, sectionId: selectedSection }
+      const studentData = {
+        ...data,
+        sectionId: selectedSection,
+        courses: selectedCourses,
+      }
       if (editingStudent) {
         await updateStudent({
           id: editingStudent._id,
@@ -659,6 +687,7 @@ const StudentsManagement = () => {
       }
       setIsDialogOpen(false)
       setEditingStudent(null)
+      setSelectedCourses([])
       reset()
     } catch (error: unknown) {
       toast.error(handleApiError(error))
@@ -670,6 +699,9 @@ const StudentsManagement = () => {
     setValue('studentId', student.studentId)
     setValue('name', student.name)
     setValue('email', student.email)
+    setSelectedCourses(
+      student.courses?.map((c) => (typeof c === 'string' ? c : c._id)) || []
+    )
     setIsDialogOpen(true)
   }
 
@@ -705,7 +737,13 @@ const StudentsManagement = () => {
             {selectedSection && (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button
+                    onClick={() => {
+                      setEditingStudent(null)
+                      setSelectedCourses([])
+                      reset()
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Student
                   </Button>
@@ -739,6 +777,55 @@ const StudentsManagement = () => {
                         placeholder="student@university.edu"
                       />
                     </div>
+                    <div>
+                      <label className="text-sm font-medium">Courses *</label>
+                      <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
+                        {courses.length > 0 ? (
+                          courses.map((course) => (
+                            <div
+                              key={course._id}
+                              className="flex items-center space-x-2 mb-2"
+                            >
+                              <input
+                                type="checkbox"
+                                id={course._id}
+                                checked={selectedCourses.includes(course._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCourses([
+                                      ...selectedCourses,
+                                      course._id,
+                                    ])
+                                  } else {
+                                    setSelectedCourses(
+                                      selectedCourses.filter(
+                                        (id) => id !== course._id
+                                      )
+                                    )
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <label
+                                htmlFor={course._id}
+                                className="text-sm cursor-pointer"
+                              >
+                                {course.name} ({course.code})
+                              </label>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            No courses available for this section
+                          </p>
+                        )}
+                      </div>
+                      {selectedCourses.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Please select at least one course
+                        </p>
+                      )}
+                    </div>
                     <div className="flex justify-end space-x-2">
                       <Button
                         type="button"
@@ -746,12 +833,16 @@ const StudentsManagement = () => {
                         onClick={() => {
                           setIsDialogOpen(false)
                           setEditingStudent(null)
+                          setSelectedCourses([])
                           reset()
                         }}
                       >
                         Cancel
                       </Button>
-                      <Button type="submit">
+                      <Button
+                        type="submit"
+                        disabled={selectedCourses.length === 0}
+                      >
                         {editingStudent ? 'Update' : 'Create'}
                       </Button>
                     </div>
@@ -838,16 +929,22 @@ const UsersManagement = () => {
   const users = usersResponse?.data?.data || []
   const sections = sectionsResponse?.data?.data || []
   const selectedRole = watch('role')
+  const selectedSectionId = watch('sectionId')
 
   const onSubmit = async (data: CreateUserForm) => {
+    console.log('[USER FORM] Submitting data:', data)
+    console.log('[USER FORM] EditingUser:', editingUser)
+
     try {
       if (editingUser) {
+        console.log('[USER FORM] Updating user with ID:', editingUser._id)
         await updateUser({
           id: editingUser._id,
           data,
         }).unwrap()
         toast.success('User updated successfully!')
       } else {
+        console.log('[USER FORM] Creating new user')
         await createUser(data).unwrap()
         toast.success('User created successfully!')
       }
@@ -855,6 +952,7 @@ const UsersManagement = () => {
       setEditingUser(null)
       reset()
     } catch (error: unknown) {
+      console.error('[USER FORM] Error:', error)
       toast.error(handleApiError(error))
     }
   }
@@ -921,6 +1019,7 @@ const UsersManagement = () => {
                 <div>
                   <label className="text-sm font-medium">Role</label>
                   <Select
+                    value={selectedRole || ''}
                     onValueChange={(value) =>
                       setValue(
                         'role',
@@ -945,6 +1044,7 @@ const UsersManagement = () => {
                       Assigned Section
                     </label>
                     <Select
+                      value={selectedSectionId || ''}
                       onValueChange={(value) => setValue('sectionId', value)}
                     >
                       <SelectTrigger>

@@ -8,7 +8,7 @@ import type { RootState } from '@/lib/simpleStore'
 import { clearCredentials, setCredentials } from '@/lib/simpleStore'
 import type { User } from '@/types'
 import type { ReactNode } from 'react'
-import { createContext, useEffect } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 interface AuthContextType {
@@ -63,13 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
+    console.log('[AUTH CONTEXT] Logout function called')
     try {
+      console.log('[AUTH CONTEXT] Making logout API call')
       await logoutMutation().unwrap()
+      console.log('[AUTH CONTEXT] Logout API call successful')
     } catch (error) {
       // Even if logout fails on server, clear local state
-      console.error('Logout error:', error)
+      console.error('[AUTH CONTEXT] Logout API error:', error)
     } finally {
+      console.log('[AUTH CONTEXT] Clearing credentials')
       dispatch(clearCredentials())
+      console.log('[AUTH CONTEXT] Credentials cleared')
     }
   }
 
@@ -82,4 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

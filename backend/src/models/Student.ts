@@ -41,12 +41,22 @@ const studentSchema = new Schema<IStudent>(
         courses: [{
             type: Schema.Types.ObjectId,
             ref: 'Course',
+            required: true,
         }],
     },
     {
         timestamps: true,
     }
 );
+
+// Validation: Student must be assigned to at least one course
+studentSchema.pre('save', function (next) {
+    if (!this.courses || this.courses.length === 0) {
+        const error = new Error('Student must be assigned to at least one course');
+        return next(error);
+    }
+    next();
+});
 
 // Index for faster queries
 studentSchema.index({ studentId: 1 });

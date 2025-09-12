@@ -94,11 +94,17 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, email, role, sectionId } = req.body;
 
+    console.log('[UPDATE USER] Request params:', { id });
+    console.log('[UPDATE USER] Request body:', { name, email, role, sectionId });
+
     const user = await User.findById(id);
 
     if (!user) {
+        console.log('[UPDATE USER] User not found with id:', id);
         throw new AppError('User not found', 404);
     }
+
+    console.log('[UPDATE USER] Found user:', { id: user._id, name: user.name, role: user.role });
 
     // If role is changing to CR, sectionId is required
     if (role === 'cr' && !sectionId) {

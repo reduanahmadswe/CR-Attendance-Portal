@@ -7,26 +7,17 @@ import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
-    // Debug logging
-    console.log('[LOGIN] Request body:', { email, password: password ? '***' : 'undefined' });
-    console.log('[LOGIN] Body keys:', Object.keys(req.body));
-
     // Check if user exists
     const user = await User.findOne({ email }).select('+passwordHash').populate('sectionId', 'name code');
-    console.log('[LOGIN] User found:', user ? 'YES' : 'NO');
 
     if (!user) {
-        console.log('[LOGIN] User not found for email:', email);
         throw new AppError('Invalid email or password', 401);
     }
 
     // Check password
     const isPasswordValid = await user.comparePassword(password);
-    console.log('[LOGIN] Password valid:', isPasswordValid);
-    console.log('[LOGIN] Stored hash length:', user.passwordHash?.length || 0);
 
     if (!isPasswordValid) {
-        console.log('[LOGIN] Password comparison failed');
         throw new AppError('Invalid email or password', 401);
     }
 

@@ -103,7 +103,7 @@ export interface CreateStudentRequest {
     name: string;
     email: string;
     sectionId: string;
-    courses?: string[];
+    courses: string[];
 }
 
 export interface Attendee {

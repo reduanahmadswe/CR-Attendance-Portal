@@ -19,7 +19,13 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
+        secure: false,
+        ws: true,
+        timeout: 10000,
       },
     },
+  },
+  preview: {
+    port: 4173,
   },
 })

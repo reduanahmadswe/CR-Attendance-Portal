@@ -33,7 +33,9 @@ const authReducer = (state = initialAuthState, action: AuthAction) => {
             }
             return state;
         case 'auth/clearCredentials':
+            console.log('[STORE] Clearing credentials - removing accessToken from localStorage');
             localStorage.removeItem('accessToken');
+            console.log('[STORE] Credentials cleared, setting user to null');
             return {
                 ...state,
                 user: null,

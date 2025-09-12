@@ -20,11 +20,16 @@ import type {
 import type { RootState } from './simpleStore';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
         const state = getState() as RootState;
         const token = state.auth.accessToken;
+
+        // Set common headers
+        headers.set('Content-Type', 'application/json');
+        headers.set('Accept', 'application/json');
+
         if (token) {
             headers.set('authorization', `Bearer ${token}`);
         }
@@ -36,6 +41,10 @@ export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery,
     tagTypes: ['User', 'Section', 'Course', 'Student', 'AttendanceRecord'],
+    keepUnusedDataFor: 60, // Keep data for 60 seconds
+    refetchOnMountOrArgChange: 30, // Only refetch if data is older than 30 seconds
+    refetchOnFocus: false, // Don't refetch when window regains focus
+    refetchOnReconnect: false, // Don't refetch when reconnecting
     endpoints: (builder) => ({
         // Auth endpoints
         login: builder.mutation<ApiResponse<LoginResponse>, LoginRequest>({
@@ -126,6 +135,15 @@ export const apiSlice = createApi({
             }),
             providesTags: (_result, _error, { sectionId }) => [{ type: 'Student', id: sectionId }],
         }),
+        getCourseStudents: builder.query<ApiResponse<PaginatedResponse<Student>>, { sectionId: string; courseId: string; params?: PaginationQuery }>({
+            query: ({ sectionId, courseId, params }) => ({
+                url: `/sections/${sectionId}/courses/${courseId}/students`,
+                params: params || {},
+            }),
+            providesTags: (_result, _error, { sectionId, courseId }) => [
+                { type: 'Student', id: `${sectionId}-${courseId}` }
+            ],
+        }),
 
         // Courses endpoints
         getCourse: builder.query<ApiResponse<Course>, string>({
@@ -165,11 +183,14 @@ export const apiSlice = createApi({
             providesTags: (_result, _error, id) => [{ type: 'Student', id }],
         }),
         createStudent: builder.mutation<ApiResponse<Student>, CreateStudentRequest>({
-            query: (studentData) => ({
-                url: '/students',
-                method: 'POST',
-                body: studentData,
-            }),
+            query: (studentData) => {
+                const { sectionId, ...bodyData } = studentData;
+                return {
+                    url: `/sections/${sectionId}/students`,
+                    method: 'POST',
+                    body: bodyData,
+                };
+            },
             invalidatesTags: ['Student'],
         }),
         updateStudent: builder.mutation<ApiResponse<Student>, { id: string; data: Partial<CreateStudentRequest> }>({
@@ -314,6 +335,7 @@ export const {
     useDeleteSectionMutation,
     useGetSectionCoursesQuery,
     useGetSectionStudentsQuery,
+    useGetCourseStudentsQuery,
 
     // Courses hooks
     useGetCourseQuery,

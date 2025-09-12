@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { AttendanceRecord, Course, Section, Student, User } from '../models';
+import { Course, Section, Student, User } from '../models';
 
 // Load environment variables
 dotenv.config();
@@ -18,16 +18,14 @@ const connectDB = async () => {
 
 export const seedData = async () => {
     try {
-        // Clear existing data
-        await Promise.all([
-            User.deleteMany({}),
-            Section.deleteMany({}),
-            Course.deleteMany({}),
-            Student.deleteMany({}),
-            AttendanceRecord.deleteMany({}),
-        ]);
+        // Check if data already exists
+        const existingUsers = await User.countDocuments();
+        if (existingUsers > 0) {
+            console.log('📊 Database already has data. Skipping seeding.');
+            return;
+        }
 
-        console.log('Cleared existing data');
+        console.log('🌱 Starting database seeding...');
 
         // Create sections
         const sections = await Section.insertMany([

@@ -3,17 +3,21 @@ import Joi from 'joi';
 import { AppError } from '../utils/errorHandler';
 
 export const validate = (schema: Joi.ObjectSchema) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        // Debug logging
-        console.log('[VALIDATION] Request body:', req.body);
-        console.log('[VALIDATION] Content-Type:', req.headers['content-type']);
-
+    return (req: Request, res: Response, next: NextFunction): void => {
         const { error } = schema.validate(req.body, { abortEarly: false });
 
         if (error) {
-            const errors = error.details.map((detail) => detail.message);
-            console.log('[VALIDATION] Error:', errors);
-            throw new AppError(`Validation error: ${errors.join(', ')}`, 400);
+            const firstError = error.details?.[0];
+            res.status(400).json({
+                success: false,
+                error: firstError?.message || 'Validation failed',
+                field: firstError?.path?.join('.') || 'unknown',
+                debug: process.env.NODE_ENV === 'development' ? {
+                    value: firstError?.context?.value,
+                    fullValidationErrors: error.details
+                } : undefined
+            });
+            return;
         }
 
         next();
@@ -53,6 +57,17 @@ export const schemas = {
         }),
     }),
 
+    userUpdate: Joi.object({
+        name: Joi.string().trim().max(100).optional(),
+        email: Joi.string().email().optional(),
+        role: Joi.string().valid('admin', 'cr', 'instructor', 'viewer').optional(),
+        sectionId: Joi.string().when('role', {
+            is: 'cr',
+            then: Joi.required(),
+            otherwise: Joi.optional(),
+        }),
+    }),
+
     // Section schemas
     sectionCreate: Joi.object({
         name: Joi.string().trim().max(100).required(),
@@ -78,7 +93,12 @@ export const schemas = {
         studentId: Joi.string().trim().max(20).required(),
         name: Joi.string().trim().max(100).required(),
         email: Joi.string().email().required(),
-        courses: Joi.array().items(Joi.string()).optional(),
+        courses: Joi.array().items(
+            Joi.string().regex(/^[0-9a-fA-F]{24}$/).message('Invalid course ID format')
+        ).min(1).required().messages({
+            'array.min': 'Student must be assigned to at least one course',
+            'any.required': 'Course assignment is required'
+        }),
     }),
 
     studentsCreateBatch: Joi.object({
@@ -87,7 +107,12 @@ export const schemas = {
                 studentId: Joi.string().trim().max(20).required(),
                 name: Joi.string().trim().max(100).required(),
                 email: Joi.string().email().required(),
-                courses: Joi.array().items(Joi.string()).optional(),
+                courses: Joi.array().items(
+                    Joi.string().regex(/^[0-9a-fA-F]{24}$/).message('Invalid course ID format')
+                ).min(1).required().messages({
+                    'array.min': 'Student must be assigned to at least one course',
+                    'any.required': 'Course assignment is required'
+                }),
             })
         ).required(),
     }),
@@ -96,7 +121,7 @@ export const schemas = {
     attendanceCreate: Joi.object({
         sectionId: Joi.string().required(),
         courseId: Joi.string().required(),
-        date: Joi.date().max('now').required(),
+        date: Joi.date().max(new Date()).required(),
         attendees: Joi.array().items(
             Joi.object({
                 studentId: Joi.string().required(),

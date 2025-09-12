@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/context/AuthContext'
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -8,7 +8,13 @@ interface PrivateRouteProps {
 }
 
 export function PrivateRoute({ children, requiredRole }: PrivateRouteProps) {
-  const { user, isLoading, isAuthenticated } = useAuth()
+  const auth = useAuth()
+
+  if (!auth) {
+    return <Navigate to="/login" replace />
+  }
+
+  const { user, isLoading, isAuthenticated } = auth
 
   if (isLoading) {
     return (
