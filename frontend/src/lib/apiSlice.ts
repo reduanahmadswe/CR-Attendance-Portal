@@ -133,11 +133,14 @@ export const apiSlice = createApi({
             providesTags: (_result, _error, id) => [{ type: 'Course', id }],
         }),
         createCourse: builder.mutation<ApiResponse<Course>, CreateCourseRequest>({
-            query: (courseData) => ({
-                url: '/courses',
-                method: 'POST',
-                body: courseData,
-            }),
+            query: (courseData) => {
+                const { sectionId, ...bodyData } = courseData;
+                return {
+                    url: `/sections/${sectionId}/courses`,
+                    method: 'POST',
+                    body: bodyData,
+                };
+            },
             invalidatesTags: ['Course'],
         }),
         updateCourse: builder.mutation<ApiResponse<Course>, { id: string; data: Partial<CreateCourseRequest> }>({
