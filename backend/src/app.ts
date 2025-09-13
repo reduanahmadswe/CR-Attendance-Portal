@@ -6,12 +6,16 @@ import helmet from 'helmet';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 
-import { envVars } from './config/env';
+import connectDB from './config/database';
 
 import { globalErrorHandler, notFoundHandler } from './middleware';
 import { router } from './routes';
 
 const app = express();
+
+// Fallback environment variables for serverless
+const NODE_ENV = process.env.NODE_ENV || 'production';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://diucrportal.vercel.app';
 
 // Trust proxy for Vercel
 app.set('trust proxy', 1);
@@ -29,24 +33,24 @@ const limiter = rateLimit({
     message: 'Too many requests from this IP, please try again later.',
 });
 
-if (envVars.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
+if (NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
     app.use('/api/', limiter);
 }
 
 // Auth rate limiting
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: envVars.NODE_ENV === 'production' ? 10 : 100,
+    max: NODE_ENV === 'production' ? 10 : 100,
     message: 'Too many authentication attempts, please try again later.',
 });
 
-if (envVars.NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
+if (NODE_ENV === 'production' || process.env.ENABLE_RATE_LIMIT === 'true') {
     app.use('/api/auth/', authLimiter);
 }
 
 // CORS configuration
 const allowedOrigins = [
-    envVars.FRONTEND_URL || 'https://diucrportal.vercel.app',
+    FRONTEND_URL,
     'https://diucrportal.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
@@ -71,7 +75,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Logging middleware
-if (envVars.NODE_ENV === 'development') {
+if (NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
     app.use(morgan('combined'));
@@ -84,7 +88,7 @@ app.get('/', (req, res) => {
         message: 'CR Attendance Portal API is running successfully',
         timestamp: new Date().toISOString(),
         version: '1.0.0',
-        environment: envVars.NODE_ENV,
+        environment: NODE_ENV,
         database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     });
 });
@@ -133,12 +137,41 @@ app.get('/api/health', (req, res) => {
         success: true,
         message: 'CR Attendance Portal API is running',
         timestamp: new Date().toISOString(),
-        database: 'connection-on-demand',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     });
 });
 
-// API Routes (database connection handled in individual controllers)
+// Database connection middleware for serverless API routes  
+app.use('/api', async (req, res, next) => {
+    // Skip database connection for health and test endpoints
+    if (req.path === '/health' || req.path === '/test') {
+        return next();
+    }
+
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Database connection failed',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString(),
+        });
+    }
+});
+
+// API Routes
 app.use('/api', router);
+
+// Catch-all error handler for unhandled routes
+app.use('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.originalUrl} not found`,
+        timestamp: new Date().toISOString(),
+    });
+});
 
 // Error handling
 app.use(notFoundHandler);
