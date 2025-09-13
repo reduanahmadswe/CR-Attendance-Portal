@@ -1,4 +1,5 @@
 # Render Deployment Configuration f6. Use above build and start commands
+
 7. Add environment variables
 8. Deploy!
 
@@ -16,7 +17,7 @@ If render.yaml doesn't work, manually configure:
 
 1. **Repository**: `https://github.com/reduanahmadswe/CR-Attendance-Portal`
 2. **Root Directory**: `backend` ← This is the KEY fix!
-3. **Build Command**: `npm install && npm run build`
+3. **Build Command**: `npm ci --include=dev && npm run build`
 4. **Start Command**: `npm start`
 5. **Auto-Deploy**: Yes (optional)
 
@@ -66,7 +67,7 @@ PORT=10000
 4. Connect your GitHub repository: `CR-Attendance-Portal`
 5. **CRITICAL**: Set Root Directory to `backend`
 6. Use above build and start commands
-6. Add environment variables
-7. Deploy!
+7. Add environment variables
+8. Deploy!
 
 Your API will be available at: https://your-app-name.onrender.com
