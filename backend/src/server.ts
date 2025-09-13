@@ -1,79 +1,27 @@
-/* eslint-disable no-console */
 import { Server } from 'http';
 import app from './app';
 import connectDB from './config/database';
-import { envVars } from './config/env';
-import { checkAndSeed } from './scripts/seed';
+import dotenv from "dotenv";
 
+dotenv.config();
 let server: Server;
 
-// Initialize database and seed data
-const initializeApp = async () => {
+const start = async () => {
+  try {
     await connectDB();
-    await checkAndSeed();
-};
-
-// Start server
-const startServer = async () => {
-    await initializeApp();
-
-    server = app.listen(envVars.PORT, () => {
-        console.log(`🚀 Server running on port ${envVars.PORT}`);
-        console.log(`📊 Environment: ${envVars.NODE_ENV}`);
-        console.log(`🔗 API Base URL: http://localhost:${envVars.PORT}/api`);
+    server = app.listen(process.env.PORT || 5000, () => {
+      console.log(`🚀 Server running on port ${process.env.PORT || 5000}`);
     });
-
-    return server;
+  } catch (err) {
+    console.error('Server failed to start', err);
+    process.exit(1);
+  }
 };
 
-// Start the application for all environments
-startServer().catch((error) => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-});
+start();
 
-/**
- * Process event handlers for graceful shutdown
- */
-
-// Unhandled promise rejection
-process.on('unhandledRejection', (error) => {
-    console.log('Unhandled rejection detected .. server shutting down..', error);
-
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-
-    process.exit(1);
-});
-
-// Uncaught exception
-process.on('uncaughtException', (error) => {
-    console.log('Uncaught exception detected... server shutting down..', error);
-
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-
-    process.exit(1);
-});
-
-// Graceful shutdown (SIGTERM)
-process.on('SIGTERM', (error) => {
-    console.log('SIGTERM signal received... server shutting down..', error);
-
-    if (server) {
-        server.close(() => {
-            process.exit(1);
-        });
-    }
-
-    process.exit(1);
-});
+process.on('SIGTERM', () => server?.close(() => process.exit(0)));
+process.on('uncaughtException', () => server?.close(() => process.exit(1)));
+process.on('unhandledRejection', () => server?.close(() => process.exit(1)));
 
 export { app, server };
-
