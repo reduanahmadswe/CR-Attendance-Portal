@@ -1,3 +1,4 @@
+import { jsPDF } from 'jspdf';
 import puppeteer from 'puppeteer';
 import { IAttendanceRecord } from '../models/AttendanceRecord';
 import { ICourse } from '../models/Course';
@@ -17,18 +18,65 @@ interface PopulatedAttendanceRecord extends Omit<IAttendanceRecord, 'sectionId' 
 }
 
 export const generateAttendancePDF = async (record: PopulatedAttendanceRecord): Promise<Buffer> => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+  console.log('[PDF GENERATOR] Starting PDF generation for record:', record._id);
 
+  // Try Puppeteer first, fallback to jsPDF if it fails
   try {
+    return await generateAttendancePDFWithPuppeteer(record);
+  } catch (puppeteerError) {
+    console.warn('[PDF GENERATOR] Puppeteer failed, trying jsPDF fallback:', puppeteerError);
+    try {
+      return await generateAttendancePDFWithJsPDF(record);
+    } catch (jsPDFError) {
+      console.error('[PDF GENERATOR] Both Puppeteer and jsPDF failed');
+      throw new Error(`PDF generation failed: ${puppeteerError instanceof Error ? puppeteerError.message : 'Unknown error'}`);
+    }
+  }
+};
+
+const generateAttendancePDFWithPuppeteer = async (record: PopulatedAttendanceRecord): Promise<Buffer> => {
+  console.log('[PDF GENERATOR] Starting PDF generation for record:', record._id);
+
+  let browser;
+  try {
+    console.log('[PDF GENERATOR] Launching Puppeteer browser...');
+    browser = await puppeteer.launch({
+      headless: true, // Use headless mode
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-web-security',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+      ],
+      timeout: 30000, // 30 second timeout
+    });
+
+    console.log('[PDF GENERATOR] Browser launched successfully');
     const page = await browser.newPage();
 
+    // Set a timeout for the page
+    page.setDefaultTimeout(30000);
+
+    console.log('[PDF GENERATOR] Generating HTML content...');
     const html = generateAttendanceHTML(record);
+    console.log('[PDF GENERATOR] HTML content generated, length:', html.length);
 
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, {
+      waitUntil: 'domcontentloaded', // Changed from networkidle0 to domcontentloaded for faster loading
+      timeout: 20000
+    });
+    console.log('[PDF GENERATOR] HTML content set in page');
 
+    console.log('[PDF GENERATOR] Generating PDF...');
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -38,12 +86,89 @@ export const generateAttendancePDF = async (record: PopulatedAttendanceRecord): 
         left: '1cm',
         right: '1cm',
       },
+      timeout: 20000, // Add timeout for PDF generation
     });
 
+    console.log('[PDF GENERATOR] PDF generated successfully, size:', pdf.length, 'bytes');
     return Buffer.from(pdf);
+  } catch (error) {
+    console.error('[PDF GENERATOR] Error during PDF generation:', error);
+    // More specific error message based on error type
+    if (error instanceof Error) {
+      if (error.message.includes('Target closed') || error.message.includes('Protocol error')) {
+        throw new Error('PDF generation failed: Browser process crashed. Please try again.');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('PDF generation failed: Operation timed out. Please try again.');
+      } else {
+        throw new Error(`PDF generation failed: ${error.message}`);
+      }
+    } else {
+      throw new Error('PDF generation failed: Unknown error occurred');
+    }
   } finally {
-    await browser.close();
+    if (browser) {
+      try {
+        console.log('[PDF GENERATOR] Closing browser...');
+        await browser.close();
+        console.log('[PDF GENERATOR] Browser closed successfully');
+      } catch (closeError) {
+        console.error('[PDF GENERATOR] Error closing browser:', closeError);
+        // Don't throw here, just log the error
+      }
+    }
   }
+};
+
+const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord): Promise<Buffer> => {
+  console.log('[PDF GENERATOR] Using jsPDF fallback...');
+
+  const doc = new jsPDF();
+
+  // Add title
+  doc.setFontSize(20);
+  doc.text('Attendance Report', 20, 20);
+
+  // Add basic information
+  doc.setFontSize(12);
+  const date = new Date(record.date).toLocaleDateString('en-US');
+  const sectionName = record.sectionId.name || 'Unknown Section';
+  const courseName = record.courseId.name || 'Unknown Course';
+  const takenBy = record.takenBy.name || 'Unknown User';
+
+  doc.text(`Date: ${date}`, 20, 35);
+  doc.text(`Section: ${sectionName}`, 20, 45);
+  doc.text(`Course: ${courseName}`, 20, 55);
+  doc.text(`Taken By: ${takenBy}`, 20, 65);
+
+  // Add attendance summary
+  const presentCount = record.attendees.filter(a => a.status === 'present').length;
+  const absentCount = record.attendees.filter(a => a.status === 'absent').length;
+  const totalStudents = record.attendees.length;
+
+  doc.text(`Total Students: ${totalStudents}`, 20, 80);
+  doc.text(`Present: ${presentCount}`, 20, 90);
+  doc.text(`Absent: ${absentCount}`, 20, 100);
+
+  // Add attendance list
+  doc.text('Attendance List:', 20, 115);
+
+  let yPosition = 125;
+  record.attendees.forEach((attendee, index) => {
+    if (yPosition > 270) { // Start new page if needed
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    const studentName = attendee.studentId.name || 'Unknown Student';
+    const studentId = attendee.studentId.studentId || 'Unknown ID';
+    const status = attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1);
+
+    doc.text(`${index + 1}. ${studentName} (${studentId}) - ${status}`, 20, yPosition);
+    yPosition += 10;
+  });
+
+  console.log('[PDF GENERATOR] jsPDF PDF generated successfully');
+  return Buffer.from(doc.output('arraybuffer'));
 };
 
 const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {

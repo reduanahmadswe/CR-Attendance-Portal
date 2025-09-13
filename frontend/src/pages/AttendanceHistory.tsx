@@ -97,7 +97,14 @@ export function AttendanceHistory() {
 
   const handleDownloadPDF = async (recordId: string) => {
     try {
+      console.log('Starting PDF download for record:', recordId)
       const blob = await downloadPDF(recordId).unwrap()
+      console.log('PDF blob received, size:', blob.size)
+
+      if (blob.size === 0) {
+        throw new Error('Received empty PDF file')
+      }
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -106,8 +113,32 @@ export function AttendanceHistory() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+      console.log('PDF download completed successfully')
     } catch (error) {
       console.error('Error downloading PDF:', error)
+
+      // Show user-friendly error message
+      let errorMessage = 'Failed to download PDF. Please try again.'
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 403) {
+          errorMessage =
+            'You do not have permission to download this attendance record.'
+        } else if (error.status === 404) {
+          errorMessage = 'Attendance record not found.'
+        } else if (
+          error &&
+          typeof error === 'object' &&
+          'data' in error &&
+          error.data &&
+          typeof error.data === 'object' &&
+          'message' in error.data
+        ) {
+          errorMessage = String(error.data.message)
+        }
+      }
+
+      // You could add a toast notification here
+      alert(errorMessage)
     }
   }
 

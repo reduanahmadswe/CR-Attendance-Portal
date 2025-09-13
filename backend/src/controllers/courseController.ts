@@ -96,7 +96,7 @@ export const deleteCourse = asyncHandler(async (req: Request, res: Response) => 
 
 export const getCourseStudents = asyncHandler(async (req: Request, res: Response) => {
     const { sectionId, courseId } = req.params;
-    const { page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 1000, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
     // Verify section and course exist
     const [section, course] = await Promise.all([

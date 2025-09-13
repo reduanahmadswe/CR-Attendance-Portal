@@ -134,7 +134,7 @@ export const schemas = {
     // Pagination and filtering schemas
     pagination: Joi.object({
         page: Joi.number().integer().min(1).default(1),
-        limit: Joi.number().integer().min(1).max(100).default(10),
+        limit: Joi.number().integer().min(1).max(1000).default(10),
         sortBy: Joi.string().optional(),
         sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
     }),
@@ -146,6 +146,6 @@ export const schemas = {
         to: Joi.date().optional(),
         takenBy: Joi.string().optional(),
         page: Joi.number().integer().min(1).default(1),
-        limit: Joi.number().integer().min(1).max(100).default(10),
+        limit: Joi.number().integer().min(1).max(1000).default(10),
     }),
 };

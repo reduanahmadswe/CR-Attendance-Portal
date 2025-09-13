@@ -646,7 +646,7 @@ const StudentsManagement = () => {
   const [selectedSection, setSelectedSection] = useState<string>('')
   const { data: sectionsResponse } = useGetSectionsQuery({})
   const { data: studentsResponse, isLoading } = useGetSectionStudentsQuery(
-    { sectionId: selectedSection },
+    { sectionId: selectedSection, },
     { skip: !selectedSection }
   )
   const { data: coursesResponse } = useGetSectionCoursesQuery(

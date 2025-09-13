@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import {
   useCreateAttendanceRecordMutation,
+  useDownloadAttendancePDFMutation,
   useGetAttendanceRecordsQuery,
   useGetCourseStudentsQuery,
   useGetSectionCoursesQuery,
@@ -602,29 +603,22 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
     )
     .slice(0, 10)
 
+  const [downloadAttendancePDF] = useDownloadAttendancePDFMutation()
+
   const downloadPDF = async (attendanceId: string) => {
     try {
       console.log(
         '[PDF DOWNLOAD] Starting download for attendance:',
         attendanceId
       )
-      const baseUrl =
-        import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
-      const response = await fetch(
-        `${baseUrl}/attendance/${attendanceId}/download`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        }
-      )
 
-      if (!response.ok) {
-        throw new Error('Failed to download PDF')
+      const blob = await downloadAttendancePDF(attendanceId).unwrap()
+      console.log('[PDF DOWNLOAD] PDF blob received, size:', blob.size)
+
+      if (blob.size === 0) {
+        throw new Error('Received empty PDF file')
       }
 
-      const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -636,8 +630,19 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
 
       toast.success('PDF downloaded successfully!')
     } catch (error) {
-      console.error('[PDF DOWNLOAD] Error:', error)
-      toast.error('Failed to download PDF')
+      console.error('[PDF DOWNLOAD] REduan:', error)
+
+      let errorMessage = 'Failed to download PDF'
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 403) {
+          errorMessage =
+            'You do not have permission to download this attendance record'
+        } else if (error.status === 404) {
+          errorMessage = 'Attendance record not found'
+        }
+      }
+
+      toast.error(errorMessage)
     }
   }
 

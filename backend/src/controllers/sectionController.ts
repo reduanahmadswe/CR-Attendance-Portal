@@ -138,7 +138,7 @@ export const deleteSection = asyncHandler(async (req: Request, res: Response) =>
 
 export const getSectionCourses = asyncHandler(async (req: Request, res: Response) => {
     const { sectionId } = req.params;
-    const { page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 100, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
     // Verify section exists
     const section = await Section.findById(sectionId);
@@ -176,7 +176,7 @@ export const getSectionCourses = asyncHandler(async (req: Request, res: Response
 
 export const getSectionStudents = asyncHandler(async (req: Request, res: Response) => {
     const { sectionId } = req.params;
-    const { page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 1000, sortBy = 'name', sortOrder = 'asc' } = req.query;
 
     // Verify section exists
     const section = await Section.findById(sectionId);

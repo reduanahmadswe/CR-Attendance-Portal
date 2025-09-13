@@ -24,4 +24,4 @@ process.on('SIGTERM', () => server?.close(() => process.exit(0)));
 process.on('uncaughtException', () => server?.close(() => process.exit(1)));
 process.on('unhandledRejection', () => server?.close(() => process.exit(1)));
 
-export { app, server };
+

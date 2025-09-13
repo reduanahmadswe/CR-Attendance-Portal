@@ -261,68 +261,129 @@ export const getAttendanceStats = asyncHandler(async (req: Request, res: Respons
 export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    // Debug authentication
-    console.log('PDF Download - Auth headers:', req.headers.authorization);
-    console.log('PDF Download - User:', req.user);
-
-    const record = await AttendanceRecord.findById(id)
-        .populate({
-            path: 'sectionId',
-            select: 'name code'
-        })
-        .populate({
-            path: 'courseId',
-            select: 'name code'
-        })
-        .populate({
-            path: 'takenBy',
-            select: 'name email'
-        })
-        .populate({
-            path: 'attendees.studentId',
-            select: 'studentId name email'
-        });
-
-    if (!record) {
-        throw new AppError('Attendance record not found', 404);
-    }
-
-    // Check if user has permission to access this record
-    if (req.user?.role !== 'admin' && record.takenBy._id.toString() !== req.user?.userId) {
-        // For CR, check if the record belongs to their section
-        if (req.user?.role === 'cr' && record.sectionId._id.toString() !== req.user?.sectionId) {
-            throw new AppError('Access denied', 403);
-        }
-    }
+    console.log(`[PDF DOWNLOAD] Starting download for attendance: ${id}`);
+    console.log('[PDF DOWNLOAD] Auth user:', req.user?.userId, 'role:', req.user?.role);
 
     try {
+        // Validate ObjectId format first
+        if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+            console.error('[PDF DOWNLOAD] Invalid ObjectId format:', id);
+            throw new AppError('Invalid attendance record ID format', 400);
+        }
+
+        const record = await AttendanceRecord.findById(id)
+            .populate({
+                path: 'sectionId',
+                select: 'name code'
+            })
+            .populate({
+                path: 'courseId',
+                select: 'name code'
+            })
+            .populate({
+                path: 'takenBy',
+                select: 'name email'
+            })
+            .populate({
+                path: 'attendees.studentId',
+                select: 'studentId name email'
+            });
+
+        if (!record) {
+            console.error('[PDF DOWNLOAD] Attendance record not found:', id);
+            throw new AppError('Attendance record not found', 404);
+        }
+
+        console.log('[PDF DOWNLOAD] Record found, validating populated data...');
+
+        // Validate populated data
+        if (!record.sectionId || !record.courseId || !record.takenBy) {
+            console.error('[PDF DOWNLOAD] Missing populated data:', {
+                hasSectionId: !!record.sectionId,
+                hasCourseId: !!record.courseId,
+                hasTakenBy: !!record.takenBy,
+                sectionId: record.sectionId,
+                courseId: record.courseId,
+                takenBy: record.takenBy
+            });
+            throw new AppError('Incomplete attendance record data', 500);
+        }
+
+        // Check if user has permission to access this record
+        const userRole = req.user?.role;
+        const userId = req.user?.userId;
+        const userSectionId = req.user?.sectionId;
+        const takenById = (record as any)?.takenBy?._id?.toString?.();
+        const recordSectionId = (record as any)?.sectionId?._id?.toString?.();
+
+        if (userRole !== 'admin') {
+            if (userRole === 'cr') {
+                const isOwner = takenById && userId && takenById === userId;
+                const sameSection = recordSectionId && userSectionId && recordSectionId === userSectionId;
+                if (!isOwner && !sameSection) {
+                    console.error('[PDF DOWNLOAD] Access denied for CR:', {
+                        userId,
+                        userSectionId,
+                        takenById,
+                        recordSectionId,
+                        isOwner,
+                        sameSection
+                    });
+                    throw new AppError('Access denied', 403);
+                }
+            } else {
+                console.error('[PDF DOWNLOAD] Access denied for role:', userRole);
+                throw new AppError('Access denied', 403);
+            }
+        }
+
+        console.log('[PDF DOWNLOAD] Generating PDF...');
+        const startTime = Date.now();
+
         const pdfBuffer = await generateAttendancePDF(record as any);
 
-        // Debug populated data
-        console.log('Section data:', record.sectionId);
-        console.log('Course data:', record.courseId);
+        const generationTime = Date.now() - startTime;
+        console.log(`[PDF DOWNLOAD] PDF generated successfully in ${generationTime}ms. Size: ${pdfBuffer?.length} bytes`);
 
+        if (!pdfBuffer || pdfBuffer.length === 0) {
+            console.error('[PDF DOWNLOAD] Empty PDF buffer generated');
+            throw new AppError('Failed to generate PDF: empty buffer', 500);
+        }
+
+        // Create filename
         const sectionName = (record.sectionId as any)?.name || 'Unknown-Section';
         const courseCode = (record.courseId as any)?.code || 'Unknown-Course';
         const date = new Date(record.date).toISOString().split('T')[0];
 
-        // Sanitize filename by removing/replacing special characters
         const sanitizedSectionName = sectionName.replace(/[^a-zA-Z0-9-]/g, '-');
         const sanitizedCourseCode = courseCode.replace(/[^a-zA-Z0-9-]/g, '-');
-
-        // Format: SectionName_CourseCode_Date.pdf
         const filename = `${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
 
-        console.log('Generated filename:', filename);
+        console.log('[PDF DOWNLOAD] Sending PDF with filename:', filename);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Content-Length', pdfBuffer.length.toString());
 
         res.send(pdfBuffer);
+
+        console.log('[PDF DOWNLOAD] PDF sent successfully');
+
     } catch (error) {
-        console.error('PDF generation error:', error);
-        throw new AppError('Failed to generate PDF', 500);
+        console.error('[PDF DOWNLOAD] Error occurred:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            attendanceId: id,
+            userId: req.user?.userId,
+            timestamp: new Date().toISOString()
+        });
+
+        if (error instanceof AppError) {
+            throw error;
+        } else {
+            throw new AppError(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        }
     }
 });
 
@@ -351,16 +412,30 @@ export const streamAttendancePDF = asyncHandler(async (req: Request, res: Respon
         throw new AppError('Attendance record not found', 404);
     }
 
-    // Check if user has permission to access this record
-    if (req.user?.role !== 'admin' && record.takenBy._id.toString() !== req.user?.userId) {
-        // For CR, check if the record belongs to their section
-        if (req.user?.role === 'cr' && record.sectionId._id.toString() !== req.user?.sectionId) {
-            throw new AppError('Access denied', 403);
+    // Check if user has permission to access this record (defensive checks)
+    {
+        const userRole = req.user?.role;
+        const userId = req.user?.userId;
+        const userSectionId = req.user?.sectionId;
+        const takenById = (record as any)?.takenBy?._id?.toString?.();
+        const recordSectionId = (record as any)?.sectionId?._id?.toString?.();
+
+        if (userRole !== 'admin') {
+            if (userRole === 'cr') {
+                const isOwner = takenById && userId && takenById === userId;
+                const sameSection = recordSectionId && userSectionId && recordSectionId === userSectionId;
+                if (!isOwner && !sameSection) {
+                    throw new AppError('Access denied', 403);
+                }
+            } else {
+                throw new AppError('Access denied', 403);
+            }
         }
     }
 
     try {
         const pdfBuffer = await generateAttendancePDF(record as any);
+        console.log('Stream PDF buffer size (bytes):', pdfBuffer?.length);
 
         // Debug populated data for stream
         console.log('Stream - Section data:', record.sectionId);
@@ -381,8 +456,7 @@ export const streamAttendancePDF = asyncHandler(async (req: Request, res: Respon
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-
+        res.setHeader('Cache-Control', 'no-store');
         res.send(pdfBuffer);
     } catch (error) {
         console.error('PDF generation error:', error);

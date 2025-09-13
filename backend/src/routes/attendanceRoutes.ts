@@ -15,8 +15,8 @@ router.get('/:id', attendanceController.getAttendanceRecord);
 router.put('/:id', authorize('admin', 'cr'), attendanceController.updateAttendanceRecord);
 router.delete('/:id', authorize('admin', 'cr'), attendanceController.deleteAttendanceRecord);
 
-// PDF generation routes
-router.get('/:id/pdf', attendanceController.streamAttendancePDF);
-router.get('/:id/download', attendanceController.generateAttendancePDFEndpoint);
+// PDF generation routes (allow both admin and cr)
+router.get('/:id/pdf', authorize('admin', 'cr'), attendanceController.streamAttendancePDF);
+router.get('/:id/download', authorize('admin', 'cr'), attendanceController.generateAttendancePDFEndpoint);
 
 export default router;
