@@ -61,11 +61,19 @@ export const seedData = async () => {
             throw new Error('Failed to create all required sections');
         }
 
-        // Create admin user
+        // Create admin users
         const adminUser = await User.create({
             name: 'Admin User',
             email: 'admin@university.edu',
             passwordHash: 'admin123456', // Will be hashed automatically
+            role: 'admin',
+        });
+
+        // Create additional admin user for production with expected credentials
+        const productionAdmin = await User.create({
+            name: 'Production Admin',
+            email: 'admin@admin.com',
+            passwordHash: 'admin123', // Will be hashed automatically
             role: 'admin',
         });
 
@@ -237,8 +245,9 @@ export const seedData = async () => {
         console.log('Created students');
 
         console.log('\n=== Seed Data Summary ===');
-        console.log(`Admin Email: ${adminUser.email}`);
-        console.log(`Admin Password: admin123456`);
+        console.log('Admin Accounts:');
+        console.log(`Development Admin - Email: ${adminUser.email}, Password: admin123456`);
+        console.log(`Production Admin - Email: ${productionAdmin.email}, Password: admin123`);
         console.log('\nCR Accounts:');
         crUsers.forEach((cr, index) => {
             const section = sections[index];
