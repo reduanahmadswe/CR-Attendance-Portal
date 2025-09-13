@@ -80,9 +80,16 @@ const generateAttendancePDFWithPuppeteer = async (record: PopulatedAttendanceRec
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: `
+        <div style="font-size: 10px; color: #6b7280; text-align: right; width: 100%; margin: 0 20px;">
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `,
       margin: {
         top: '1cm',
-        bottom: '1cm',
+        bottom: '1.5cm',
         left: '1cm',
         right: '1cm',
       },
@@ -124,48 +131,191 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
 
   const doc = new jsPDF();
 
-  // Add title
-  doc.setFontSize(20);
-  doc.text('Attendance Report', 20, 20);
-
-  // Add basic information
-  doc.setFontSize(12);
-  const date = new Date(record.date).toLocaleDateString('en-US');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
   const sectionName = record.sectionId.name || 'Unknown Section';
   const courseName = record.courseId.name || 'Unknown Course';
-  const takenBy = record.takenBy.name || 'Unknown User';
+  const date = new Date(record.date).toLocaleDateString('en-US');
 
-  doc.text(`Date: ${date}`, 20, 35);
-  doc.text(`Section: ${sectionName}`, 20, 45);
-  doc.text(`Course: ${courseName}`, 20, 55);
-  doc.text(`Taken By: ${takenBy}`, 20, 65);
+  // Sort attendees by student ID
+  const sortedAttendees = [...record.attendees].sort((a, b) => {
+    const idA = a.studentId.studentId || '';
+    const idB = b.studentId.studentId || '';
+    return idA.localeCompare(idB, undefined, { numeric: true });
+  });
 
-  // Add attendance summary
+  const addWatermark = () => {
+    doc.saveGraphicsState();
+    // Make watermark more visible with higher opacity
+    const gState = { opacity: 0.25 };
+    (doc as any).setGState(gState);
+    doc.setTextColor(150, 150, 150); // Darker gray for better visibility
+    doc.setFont('helvetica', 'bold'); // Make it bold
+    doc.setFontSize(80); // Larger font size
+
+    // Calculate center position and rotate text
+    const centerX = pageWidth / 2;
+    const centerY = pageHeight / 2;
+    doc.text(sectionName, centerX, centerY, {
+      angle: -45,
+      align: 'center'
+    });
+
+    doc.restoreGraphicsState();
+  };
+
+  const addDisclaimer = () => {
+    const disclaimerText = `Disclaimer: CR Attendance portal is not affiliated with university. It was created to help Class Representatives quickly prepare notebook attendance when needed. This record is intended for Section ${sectionName}.`;
+
+    // Create a styled box for disclaimer
+    const boxMargin = 15;
+    const boxHeight = 35;
+    const boxY = pageHeight - boxHeight - 10;
+
+    // Draw light blue disclaimer box
+    doc.setFillColor(219, 234, 254); // Light blue background
+    doc.rect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 'F');
+
+    // Draw blue border
+    doc.setDrawColor(59, 130, 246); // Blue border
+    doc.setLineWidth(1);
+    doc.rect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 'S');
+
+    // Add disclaimer text
+    doc.setTextColor(30, 64, 175); // Dark blue text
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+
+    const textY = boxY + 8;
+    doc.text(disclaimerText, pageWidth / 2, textY, {
+      align: 'center',
+      maxWidth: pageWidth - 40
+    });
+
+  };
+
+  const addPageNumber = (currentPage: number, totalPages: number) => {
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth - margin, pageHeight - 25, {
+      align: 'right'
+    });
+  };
+
+  // Calculate total pages needed
+  const rowsPerPage = 12; // Adjust based on table size
+  const totalPages = Math.ceil(sortedAttendees.length / rowsPerPage) || 1;
+  let currentPage = 1;
+
+  // First page header
+  addWatermark();
+
+  // Title
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(`Attendance Report – ${courseName}`, pageWidth / 2, 25, { align: 'center' });
+
+  // Subtitle
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.text(`Section: ${sectionName} | Date: ${date}`, pageWidth / 2, 35, { align: 'center' });
+
+  // Statistics
   const presentCount = record.attendees.filter(a => a.status === 'present').length;
   const absentCount = record.attendees.filter(a => a.status === 'absent').length;
+  const lateCount = record.attendees.filter(a => a.status === 'late').length;
+  const excusedCount = record.attendees.filter(a => a.status === 'excused').length;
   const totalStudents = record.attendees.length;
 
-  doc.text(`Total Students: ${totalStudents}`, 20, 80);
-  doc.text(`Present: ${presentCount}`, 20, 90);
-  doc.text(`Absent: ${absentCount}`, 20, 100);
+  doc.setFontSize(10);
+  const statsY = 50;
+  doc.text(`Total: ${totalStudents} | Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount} | Excused: ${excusedCount}`,
+    pageWidth / 2, statsY, { align: 'center' });
 
-  // Add attendance list
-  doc.text('Attendance List:', 20, 115);
+  // Table header
+  const tableStartY = 65;
+  let currentY = tableStartY;
 
-  let yPosition = 125;
-  record.attendees.forEach((attendee, index) => {
-    if (yPosition > 270) { // Start new page if needed
+  const drawTableHeader = (y: number) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(37, 99, 235); // Blue background
+    doc.rect(margin, y, pageWidth - 2 * margin, 10, 'F');
+
+    doc.text('Student ID', margin + 5, y + 7);
+    doc.text('Name', margin + 50, y + 7);
+    doc.text('Status', margin + 130, y + 7);
+
+    return y + 10;
+  };
+
+  currentY = drawTableHeader(currentY);
+
+  // Table rows
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
+  let rowIndex = 0;
+
+  sortedAttendees.forEach((attendee, index) => {
+    // Check if we need a new page
+    if (currentY > pageHeight - 60) {
+      // Add footer to current page (but not disclaimer - only on last page)
+      addPageNumber(currentPage, totalPages);
+
+      // Start new page
       doc.addPage();
-      yPosition = 20;
+      currentPage++;
+      addWatermark();
+      currentY = margin;
+      currentY = drawTableHeader(currentY);
     }
 
+    // Alternating row colors
+    if (index % 2 === 0) {
+      doc.setFillColor(249, 250, 251); // Light gray
+      doc.rect(margin, currentY, pageWidth - 2 * margin, 8, 'F');
+    }
+
+    // Student data
+    const studentId = attendee.studentId.studentId || 'N/A';
     const studentName = attendee.studentId.name || 'Unknown Student';
-    const studentId = attendee.studentId.studentId || 'Unknown ID';
     const status = attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1);
 
-    doc.text(`${index + 1}. ${studentName} (${studentId}) - ${status}`, 20, yPosition);
-    yPosition += 10;
+    doc.setFontSize(9);
+    doc.text(studentId, margin + 5, currentY + 6);
+    doc.text(studentName.substring(0, 35), margin + 50, currentY + 6); // Increased name length
+
+    // Color-coded status
+    switch (attendee.status) {
+      case 'present':
+        doc.setTextColor(6, 95, 70); // Green
+        break;
+      case 'absent':
+        doc.setTextColor(153, 27, 27); // Red
+        break;
+      case 'late':
+        doc.setTextColor(146, 64, 14); // Orange
+        break;
+      case 'excused':
+        doc.setTextColor(55, 48, 163); // Purple
+        break;
+      default:
+        doc.setTextColor(0, 0, 0);
+    }
+
+    doc.text(status, margin + 130, currentY + 6);
+    doc.setTextColor(0, 0, 0); // Reset color
+
+    currentY += 8;
   });
+
+  // Add footer to last page
+  addPageNumber(currentPage, totalPages);
+  addDisclaimer();
 
   console.log('[PDF GENERATOR] jsPDF PDF generated successfully');
   return Buffer.from(doc.output('arraybuffer'));
@@ -389,31 +539,170 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
           margin-top: 20px;
         }
         
+        .disclaimer {
+          margin-top: 30px;
+          padding: 20px;
+          background-color: #dbeafe; /* Light blue background */
+          border: 2px solid #3b82f6; /* Blue border */
+          border-radius: 10px;
+          text-align: center;
+          color: #1e40af; /* Dark blue text */
+          font-size: 11px;
+          font-style: italic;
+          line-height: 1.5;
+          max-width: 650px;
+          margin-left: auto;
+          margin-right: auto;
+          box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .watermark {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 96px; /* Larger font size */
+          color: rgba(120, 120, 120, 0.25); /* More visible with higher opacity */
+          font-weight: 900; /* Extra bold */
+          font-family: 'Arial Black', Arial, sans-serif; /* Bolder font family */
+          z-index: -1;
+          pointer-events: none;
+          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Subtle shadow for better visibility */
+        }
+        
+        .page-number {
+          position: fixed;
+          bottom: 30px;
+          right: 20px;
+          color: #6b7280;
+          font-size: 10px;
+          z-index: 1000;
+        }
+        
+        .main-title {
+          font-size: 24px;
+          font-weight: bold;
+          color: #1e40af;
+          margin-bottom: 8px;
+          text-align: center;
+        }
+        
+        .sub-title {
+          font-size: 16px;
+          color: #374151;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        
         @media print {
-          body { margin: 0; }
-          .header { page-break-inside: avoid; }
-          .attendance-table { page-break-inside: avoid; }
+          body { 
+            margin: 0; 
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .header { 
+            page-break-inside: avoid; 
+            page-break-after: avoid;
+          }
+          .info-grid {
+            page-break-inside: avoid;
+            page-break-after: avoid;
+          }
+          .stats-container {
+            page-break-inside: avoid;
+            page-break-after: avoid;
+          }
+          .attendance-table { 
+            page-break-inside: auto; 
+            border-collapse: collapse;
+          }
+          .attendance-table thead {
+            display: table-header-group;
+          }
+          .attendance-table tbody {
+            display: table-row-group;
+          }
+          .attendance-table tr { 
+            page-break-inside: avoid; 
+            page-break-after: auto; 
+          }
+          .attendance-table thead tr {
+            page-break-after: avoid;
+          }
+          /* Ensure table header repeats on each page */
+          .attendance-table thead th {
+            position: sticky;
+            top: 0;
+            background: #2563eb !important;
+            color: white !important;
+          }
+          .signature-section {
+            page-break-inside: avoid;
+            margin-top: 2cm;
+          }
+          .disclaimer { 
+            page-break-inside: avoid;
+            margin-top: 20px;
+          }
+          .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            z-index: -1;
+            font-size: 96px !important; /* Ensure larger size in print */
+            color: rgba(120, 120, 120, 0.25) !important; /* More visible */
+            font-weight: 900 !important; /* Extra bold */
+            font-family: 'Arial Black', Arial, sans-serif !important;
+          }
+          .page-number {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+          }
+          /* CSS Page Rules for better pagination */
+          @page {
+            margin: 1cm;
+            size: A4;
+            @bottom-right {
+              content: "Page " counter(page) " of " counter(pages);
+              font-size: 10px;
+              color: #6b7280;
+            }
+          }
+          /* Prevent orphaned rows */
+          .attendance-table tr {
+            orphans: 2;
+            widows: 2;
+          }
+          /* Force page break before signature if needed */
+          .footer {
+            page-break-before: auto;
+            page-break-inside: avoid;
+          }
         }
       </style>
     </head>
     <body>
+      <div class="watermark">${record.sectionId.name}</div>
+      
       <div class="header">
-        <div class="institution-name">CR Attendance Portal</div>
-        <div class="report-title">Class Attendance Report</div>
+        <div class="main-title">Attendance Report – ${record.courseId.name}</div>
+        <div class="sub-title">Section: ${record.sectionId.name} | Date: ${date}</div>
       </div>
       
       <div class="info-grid">
         <div class="info-box">
-          <div class="info-label">Section</div>
-          <div class="info-value">${record.sectionId.name} (${record.sectionId.code || 'N/A'})</div>
+          <div class="info-label">Section Code</div>
+          <div class="info-value">${record.sectionId.code || 'N/A'}</div>
         </div>
         <div class="info-box">
-          <div class="info-label">Course</div>
-          <div class="info-value">${record.courseId.name} (${record.courseId.code || 'N/A'})</div>
+          <div class="info-label">Course Code</div>
+          <div class="info-value">${record.courseId.code || 'N/A'}</div>
         </div>
         <div class="info-box">
-          <div class="info-label">Date</div>
-          <div class="info-value">${date}</div>
+          <div class="info-label">Time Taken</div>
+          <div class="info-value">${time}</div>
         </div>
         <div class="info-box">
           <div class="info-label">Taken By</div>
@@ -443,16 +732,14 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
       <table class="attendance-table">
         <thead>
           <tr>
-            <th>#</th>
             <th>Student ID</th>
             <th>Name</th>
-            <th>Status</th>
+            <th>Attendance Status</th>
           </tr>
         </thead>
         <tbody>
           ${sortedAttendees.map((attendee, index) => `
             <tr>
-              <td>${index + 1}</td>
               <td>${attendee.studentId.studentId}</td>
               <td>${attendee.studentId.name}</td>
               <td>
@@ -480,6 +767,10 @@ const generateAttendanceHTML = (record: PopulatedAttendanceRecord): string => {
         <div class="generated-info">
           Generated on ${new Date().toLocaleString()} | Total Students: ${totalStudents}
         </div>
+      </div>
+      
+      <div class="disclaimer">
+        Disclaimer: CR Attendance portal is not affiliated with university. It was created to help Class Representatives quickly prepare notebook attendance when needed. This record is intended for Section ${record.sectionId.name}.
       </div>
     </body>
     </html>

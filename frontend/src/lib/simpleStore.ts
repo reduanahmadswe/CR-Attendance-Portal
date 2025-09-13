@@ -8,7 +8,7 @@ import { apiSlice } from './apiSlice';
 const initialAuthState = {
     user: null as User | null,
     accessToken: localStorage.getItem('accessToken'),
-    isAuthenticated: false,
+    isAuthenticated: Boolean(localStorage.getItem('accessToken')),
 };
 
 interface AuthAction {

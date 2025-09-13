@@ -1,5 +1,5 @@
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useAuth } from '@/context/AuthContext'
 import {
   useDownloadAttendancePDFMutation,
   useGetAttendanceRecordsQuery,
@@ -23,12 +24,53 @@ import {
 } from '@/lib/apiSlice'
 import type { RootState } from '@/lib/simpleStore'
 import type { AttendanceRecord, Section } from '@/types'
-import { Calendar, Download, Eye, Filter, Search, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  Download,
+  Eye,
+  Filter,
+  LogOut,
+  Search,
+  Users,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 
 export function AttendanceHistory() {
   const user = useSelector((state: RootState) => state.auth.user)
+  const navigate = useNavigate()
+  const auth = useAuth()
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      if (auth?.logout) {
+        await auth.logout() // This will handle redirect to login
+      } else {
+        // Fallback: Clear auth data manually
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        window.location.href = '/login'
+      }
+    } catch (error) {
+      console.error('[ATTENDANCE HISTORY] Logout failed:', error)
+      // Still navigate to login even if logout fails
+      window.location.href = '/login'
+    }
+  }
+
+  const handleBackToDashboard = () => {
+    if (user?.role === 'cr') {
+      navigate('/cr-dashboard')
+    } else if (user?.role === 'admin') {
+      navigate('/admin-dashboard')
+    } else {
+      navigate('/')
+    }
+  }
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState('')
@@ -155,131 +197,199 @@ export function AttendanceHistory() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Attendance History
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            View and manage attendance records
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Modern Header - Same as CR Dashboard */}
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            {/* User Info */}
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Attendance History
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Welcome back,{' '}
+                  <span className="font-medium">{user?.name}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBackToDashboard}
+                className="flex items-center gap-2 h-9 px-3 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to Dashboard</span>
+              </Button>
+              <ThemeToggle />
+              <Button
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2 h-9 px-3 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Section Info for CR */}
+          {user?.role === 'cr' && user?.sectionId && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Managing Section:{' '}
+                  <span className="font-bold">
+                    {typeof user.sectionId === 'string'
+                      ? user.sectionId
+                      : `${user.sectionId.name} ${user.sectionId.code ? `(${user.sectionId.code})` : ''}`}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
+      </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Total Records
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {totalRecords}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-blue-500">
-                  <Calendar className="h-6 w-6 text-white" />
+      {/* Main Content */}
+      <main className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+          {/* Modern Header Section */}
+          <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-800 dark:via-gray-900 dark:to-blue-900/20 rounded-2xl p-6 border border-gray-200 dark:border-gray-700/30 backdrop-blur-sm mb-8">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                📊 Attendance Records
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                View and manage attendance records with detailed insights
+              </p>
+            </div>
+
+            {/* Enhanced Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium mb-1">
+                      Total Records
+                    </p>
+                    <p className="text-3xl font-bold">{totalRecords}</p>
+                  </div>
+                  <div className="bg-white/20 rounded-lg p-3">
+                    <Calendar className="h-8 w-8" />
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    This Month
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {
-                      attendanceRecords.filter((record: AttendanceRecord) => {
-                        const recordDate = new Date(record.date)
-                        const now = new Date()
-                        return (
-                          recordDate.getMonth() === now.getMonth() &&
-                          recordDate.getFullYear() === now.getFullYear()
-                        )
-                      }).length
-                    }
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-green-500">
-                  <Users className="h-6 w-6 text-white" />
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100 text-sm font-medium mb-1">
+                      This Month
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {
+                        attendanceRecords.filter((record: AttendanceRecord) => {
+                          const recordDate = new Date(record.date)
+                          const now = new Date()
+                          return (
+                            recordDate.getMonth() === now.getMonth() &&
+                            recordDate.getFullYear() === now.getFullYear()
+                          )
+                        }).length
+                      }
+                    </p>
+                  </div>
+                  <div className="bg-white/20 rounded-lg p-3">
+                    <Users className="h-8 w-8" />
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Average Attendance
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {attendanceRecords.length > 0
-                      ? Math.round(
-                          attendanceRecords.reduce(
-                            (acc: number, record: AttendanceRecord) => {
-                              const total = record.attendees.length
-                              const present = record.attendees.filter(
-                                (a) => a.status === 'present'
-                              ).length
-                              return (
-                                acc + (total > 0 ? (present / total) * 100 : 0)
-                              )
-                            },
-                            0
-                          ) / attendanceRecords.length
-                        )
-                      : 0}
-                    %
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-purple-500">
-                  <Eye className="h-6 w-6 text-white" />
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg transform hover:scale-105 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-100 text-sm font-medium mb-1">
+                      Average Attendance
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {attendanceRecords.length > 0
+                        ? Math.round(
+                            attendanceRecords.reduce(
+                              (acc: number, record: AttendanceRecord) => {
+                                const total = record.attendees.length
+                                const present = record.attendees.filter(
+                                  (a) => a.status === 'present'
+                                ).length
+                                return (
+                                  acc +
+                                  (total > 0 ? (present / total) * 100 : 0)
+                                )
+                              },
+                              0
+                            ) / attendanceRecords.length
+                          )
+                        : 100}
+                      %
+                    </p>
+                  </div>
+                  <div className="bg-white/20 rounded-lg p-3">
+                    <Eye className="h-8 w-8" />
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Enhanced Filters Section */}
+          <div className="bg-white/70 dark:bg-gray-800/70 rounded-xl p-6 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-lg mb-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                <Filter className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Filters
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Search */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Search</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Search
+                </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search by course or section..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                   />
                 </div>
               </div>
 
+              {/* Section Filter - Only for Admin */}
               {user.role === 'admin' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Section</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Section
+                  </label>
                   <Select
                     value={selectedSection}
                     onValueChange={setSelectedSection}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All sections" />
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500">
+                      <SelectValue placeholder="All Sections" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Sections</SelectItem>
@@ -293,196 +403,375 @@ export function AttendanceHistory() {
                 </div>
               )}
 
+              {/* From Date */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">From Date</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  From Date
+                </label>
                 <Input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                 />
               </div>
 
+              {/* To Date */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">To Date</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  To Date
+                </label>
                 <Input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 transition-colors"
                 />
               </div>
-
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={resetFilters}
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Attendance Records Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">
-                Loading attendance records...
-              </div>
-            ) : filteredRecords.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No attendance records found</p>
-              </div>
-            ) : (
-              <>
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Section</TableHead>
-                        <TableHead>Course</TableHead>
-                        <TableHead>Total Students</TableHead>
-                        <TableHead>Present</TableHead>
-                        <TableHead>Absent</TableHead>
-                        <TableHead>Attendance %</TableHead>
-                        <TableHead>Taken By</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRecords.map((record: AttendanceRecord) => {
-                        const totalStudents = record.attendees.length
-                        const presentStudents = record.attendees.filter(
-                          (a) => a.status === 'present'
-                        ).length
-                        const attendancePercentage =
-                          totalStudents > 0
-                            ? ((presentStudents / totalStudents) * 100).toFixed(
-                                1
-                              )
-                            : '0'
+            {/* Clear Filters Button */}
+            <div className="mt-6 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                className="px-6 py-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
 
-                        return (
-                          <TableRow key={record._id}>
-                            <TableCell>
-                              {new Date(record.date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              {typeof record.sectionId === 'string'
-                                ? record.sectionId
-                                : `${record.sectionId.name} ${record.sectionId.code ? `(${record.sectionId.code})` : ''}`}
-                            </TableCell>
-                            <TableCell>
-                              {typeof record.courseId === 'string'
-                                ? record.courseId
-                                : `${record.courseId.name} (${record.courseId.code || ''})`}
-                            </TableCell>
-                            <TableCell>{totalStudents}</TableCell>
-                            <TableCell className="text-green-600">
-                              {presentStudents}
-                            </TableCell>
-                            <TableCell className="text-red-600">
-                              {totalStudents - presentStudents}
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  parseFloat(attendancePercentage) >= 80
-                                    ? 'bg-green-100 text-green-800'
-                                    : parseFloat(attendancePercentage) >= 60
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {attendancePercentage}%
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {typeof record.takenBy === 'string'
-                                ? record.takenBy
-                                : record.takenBy.name}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDownloadPDF(record._id)}
-                                className="flex items-center gap-1"
-                              >
-                                <Download className="h-3 w-3" />
-                                PDF
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
+          {/* Enhanced Attendance Records Table */}
+          <div className="bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Attendance Records
+              </h3>
+            </div>
+
+            <div className="p-6">
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Loading attendance records...
+                  </p>
                 </div>
+              ) : filteredRecords.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
+                    <Calendar className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    No Records Found
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No attendance records match your current filters.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block">
+                    <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 border-gray-200 dark:border-gray-600">
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                              Date
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                              Section
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                              Course
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                              Total Students
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                              Present
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                              Absent
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                              Attendance %
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                              Taken By
+                            </TableHead>
+                            <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredRecords.map(
+                            (record: AttendanceRecord, index) => {
+                              const totalStudents = record.attendees.length
+                              const presentStudents = record.attendees.filter(
+                                (a) => a.status === 'present'
+                              ).length
+                              const attendancePercentage =
+                                totalStudents > 0
+                                  ? (
+                                      (presentStudents / totalStudents) *
+                                      100
+                                    ).toFixed(1)
+                                  : '0'
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6">
-                    <div className="text-sm text-gray-500">
-                      Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                      {Math.min(currentPage * pageSize, totalRecords)} of{' '}
-                      {totalRecords} records
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(1, prev - 1))
-                        }
-                      >
-                        Previous
-                      </Button>
-                      {Array.from(
-                        { length: Math.min(5, totalPages) },
-                        (_, i) => {
-                          const page = i + 1
-                          return (
-                            <Button
-                              key={page}
-                              variant={
-                                currentPage === page ? 'default' : 'outline'
-                              }
-                              size="sm"
-                              onClick={() => setCurrentPage(page)}
-                            >
-                              {page}
-                            </Button>
-                          )
-                        }
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={currentPage === totalPages}
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(totalPages, prev + 1)
-                          )
-                        }
-                      >
-                        Next
-                      </Button>
+                              return (
+                                <TableRow
+                                  key={record._id}
+                                  className={`hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200 border-gray-100 dark:border-gray-700 ${
+                                    index % 2 === 0
+                                      ? 'bg-white dark:bg-gray-900'
+                                      : 'bg-gray-50/50 dark:bg-gray-800/50'
+                                  }`}
+                                >
+                                  <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                      {new Date(
+                                        record.date
+                                      ).toLocaleDateString()}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {typeof record.sectionId === 'string'
+                                      ? record.sectionId
+                                      : `${record.sectionId.name} ${record.sectionId.code ? `(${record.sectionId.code})` : ''}`}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {typeof record.courseId === 'string'
+                                      ? record.courseId
+                                      : `${record.courseId.name} ${record.courseId.code ? `(${record.courseId.code})` : ''}`}
+                                  </TableCell>
+                                  <TableCell className="text-center font-bold text-gray-900 dark:text-gray-100">
+                                    {totalStudents}
+                                  </TableCell>
+                                  <TableCell className="text-center font-bold text-green-600 dark:text-green-400">
+                                    {presentStudents}
+                                  </TableCell>
+                                  <TableCell className="text-center font-bold text-red-600 dark:text-red-400">
+                                    {totalStudents - presentStudents}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <span
+                                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                                        parseFloat(attendancePercentage) >= 80
+                                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                                          : parseFloat(attendancePercentage) >=
+                                              60
+                                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                            : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
+                                      }`}
+                                    >
+                                      {attendancePercentage}%
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {(typeof record.takenBy === 'string'
+                                          ? record.takenBy
+                                          : record.takenBy.name
+                                        )
+                                          .charAt(0)
+                                          .toUpperCase()}
+                                      </div>
+                                      <span className="truncate">
+                                        {typeof record.takenBy === 'string'
+                                          ? record.takenBy
+                                          : record.takenBy.name}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        handleDownloadPDF(record._id)
+                                      }
+                                      className="flex items-center gap-1 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20 transition-colors"
+                                    >
+                                      <Download className="h-3 w-3" />
+                                      PDF
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            }
+                          )}
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredRecords.map((record: AttendanceRecord) => {
+                      const totalStudents = record.attendees.length
+                      const presentStudents = record.attendees.filter(
+                        (a) => a.status === 'present'
+                      ).length
+                      const attendancePercentage =
+                        totalStudents > 0
+                          ? ((presentStudents / totalStudents) * 100).toFixed(1)
+                          : '0'
+
+                      return (
+                        <div
+                          key={record._id}
+                          className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                {new Date(record.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                parseFloat(attendancePercentage) >= 80
+                                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                                  : parseFloat(attendancePercentage) >= 60
+                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                    : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
+                              }`}
+                            >
+                              {attendancePercentage}%
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                Section:
+                              </span>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                {typeof record.sectionId === 'string'
+                                  ? record.sectionId
+                                  : `${record.sectionId.name} ${record.sectionId.code ? `(${record.sectionId.code})` : ''}`}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                Course:
+                              </span>
+                              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {typeof record.courseId === 'string'
+                                  ? record.courseId
+                                  : record.courseId.name}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                Present:
+                              </span>
+                              <div className="font-bold text-green-600 dark:text-green-400">
+                                {presentStudents}/{totalStudents}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                Taken by:
+                              </span>
+                              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {typeof record.takenBy === 'string'
+                                  ? record.takenBy
+                                  : record.takenBy.name}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadPDF(record._id)}
+                              className="flex items-center gap-1 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                            >
+                              <Download className="h-3 w-3" />
+                              PDF
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Enhanced Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between mt-8 gap-4">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Showing {(currentPage - 1) * pageSize + 1} to{' '}
+                        {Math.min(currentPage * pageSize, totalRecords)} of{' '}
+                        {totalRecords} records
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === 1}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
+                          className="hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex gap-1">
+                          {Array.from(
+                            { length: Math.min(5, totalPages) },
+                            (_, i) => {
+                              const page = i + 1
+                              return (
+                                <Button
+                                  key={page}
+                                  variant={
+                                    currentPage === page ? 'default' : 'outline'
+                                  }
+                                  size="sm"
+                                  onClick={() => setCurrentPage(page)}
+                                  className={
+                                    currentPage === page
+                                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                                      : 'hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20'
+                                  }
+                                >
+                                  {page}
+                                </Button>
+                              )
+                            }
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={currentPage === totalPages}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(totalPages, prev + 1)
+                            )
+                          }
+                          className="hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }

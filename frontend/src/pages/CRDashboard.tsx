@@ -40,6 +40,8 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Download,
+  ExternalLink,
   FileText,
   History,
   LogOut,
@@ -47,7 +49,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -65,8 +67,16 @@ export function CRDashboard() {
   const { isLoading, user: authUser } = auth
   const navigate = useNavigate()
 
+  console.log('[CR DASHBOARD] Component rendered')
+  console.log('[CR DASHBOARD] Redux user:', user)
+  console.log('[CR DASHBOARD] Auth user:', authUser)
+  console.log('[CR DASHBOARD] Is loading:', isLoading)
+  console.log('[CR DASHBOARD] Auth object:', auth)
+  console.log('[CR DASHBOARD] isAuthenticated:', auth.isAuthenticated)
+
   // Add loading state check
   if (isLoading) {
+    console.log('[CR DASHBOARD] Showing loading state')
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -80,21 +90,35 @@ export function CRDashboard() {
   // Use authUser from context if available, fallback to Redux user
   const currentUser = authUser || user
 
+  console.log('[CR DASHBOARD] Current user:', currentUser)
+  console.log('[CR DASHBOARD] Current user role:', currentUser?.role)
+  console.log('[CR DASHBOARD] Current user sectionId:', currentUser?.sectionId)
+
+  // Debug component - show current state
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[CR DASHBOARD] Debug info:', {
+      isLoading,
+      isAuthenticated: auth.isAuthenticated,
+      user,
+      authUser,
+      currentUser,
+    })
+  }
+
   const handleLogout = async () => {
     console.log('[CR DASHBOARD] Logout button clicked')
-    console.log('[CR DASHBOARD] Auth object:', auth)
 
     try {
       if (auth?.logout) {
         console.log('[CR DASHBOARD] Calling auth.logout()')
-        await auth.logout()
+        await auth.logout() // This will handle redirect to login
         console.log('[CR DASHBOARD] auth.logout() completed')
       } else {
-        console.log('[CR DASHBOARD] auth.logout not available')
+        console.log(
+          '[CR DASHBOARD] auth.logout not available, fallback redirect'
+        )
+        window.location.href = '/login'
       }
-      console.log('[CR DASHBOARD] Navigating to login')
-      // Force redirect using window.location for immediate effect
-      window.location.href = '/login'
     } catch (error) {
       console.error('[CR DASHBOARD] Logout failed:', error)
       // Still navigate to login even if logout fails
@@ -107,17 +131,37 @@ export function CRDashboard() {
   }
 
   if (!currentUser) {
-    console.log('[CR DASHBOARD] No current user, redirecting to login')
-    navigate('/login')
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400">
-            Redirecting to login...
-          </p>
+    console.log('[CR DASHBOARD] No current user, checking token')
+    const token = localStorage.getItem('accessToken')
+
+    if (!token) {
+      console.log('[CR DASHBOARD] No token, redirecting to login')
+      navigate('/login')
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              Redirecting to login...
+            </p>
+          </div>
         </div>
-      </div>
-    )
+      )
+    } else {
+      console.log(
+        '[CR DASHBOARD] Token exists but no user data, showing loading'
+      )
+      // Token exists but user data not loaded yet, show loading
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading user data...
+            </p>
+          </div>
+        </div>
+      )
+    }
   }
 
   if (currentUser.role !== 'cr') {
@@ -162,78 +206,134 @@ export function CRDashboard() {
       : currentUser.sectionId._id
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              CR Dashboard
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Welcome, {currentUser.name}
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      {/* Modern Header */}
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-gray-200/20 dark:shadow-gray-900/20">
+        {/* Header gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-indigo-50/50 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-indigo-900/20"></div>
+
+        <div className="px-4 sm:px-6 lg:px-8 py-4 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            {/* User Info with enhanced styling */}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient">
+                  CR Dashboard
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  Welcome back,{' '}
+                  <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {currentUser.name}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Actions with enhanced styling */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNavigateToHistory}
+                className="flex items-center gap-2 h-10 px-4 border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 dark:hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm"
+              >
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">History</span>
+              </Button>
+              <div className="p-1 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
+                <ThemeToggle />
+              </div>
+              <Button
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={handleNavigateToHistory}
-              className="flex items-center gap-2"
-            >
-              <History className="h-4 w-4" />
-              View History
-            </Button>
-            <ThemeToggle />
-            <Button onClick={handleLogout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+
+          {/* Section Info with modern design */}
+          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50/80 via-indigo-50/60 to-purple-50/80 dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30 rounded-xl border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+                <BookOpen className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Managing Section:{' '}
+                <span className="font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {typeof currentUser.sectionId === 'string'
+                    ? currentUser.sectionId
+                    : `${currentUser.sectionId.name} ${currentUser.sectionId.code ? `(${currentUser.sectionId.code})` : ''}`}
+                </span>
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            CR Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Managing attendance for section:{' '}
-            {typeof currentUser.sectionId === 'string'
-              ? currentUser.sectionId
-              : `${currentUser.sectionId.name} ${currentUser.sectionId.code ? `(${currentUser.sectionId.code})` : ''}`}
-          </p>
+      {/* Main Content with enhanced spacing and backdrop */}
+      <main className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+          {/* Enhanced Welcome Message */}
+          <div className="text-center py-8 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-800/20 rounded-2xl backdrop-blur-sm"></div>
+            <div className="relative z-10">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-4 animate-gradient leading-tight">
+                Attendance Management Hub
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
+                Take attendance, track student participation, and generate
+                comprehensive reports
+                <span className="block mt-2 text-base text-gray-500 dark:text-gray-400">
+                  ✨ Modern • Efficient • Powerful
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <CRStatsCards sectionId={sectionId} />
+
+          {/* Take Attendance Section */}
+          <TakeAttendanceSection sectionId={sectionId} />
+
+          {/* Manage Attendance Reports Section */}
+          <EditAttendanceSection sectionId={sectionId} />
+
+          {/* Download Reports Section */}
+          <DownloadReportsSection sectionId={sectionId} />
+
+          {/* Recent Attendance Records */}
+          <ErrorBoundary>
+            <RecentAttendanceSection sectionId={sectionId} />
+          </ErrorBoundary>
         </div>
-
-        {/* Quick Stats */}
-        <CRStatsCards sectionId={sectionId} />
-
-        {/* Take Attendance Section */}
-        <TakeAttendanceSection sectionId={sectionId} />
-
-        {/* Recent Attendance Records */}
-        <ErrorBoundary>
-          <RecentAttendanceSection sectionId={sectionId} />
-        </ErrorBoundary>
-      </div>
+      </main>
     </div>
   )
 }
 
 // CR Stats Cards Component
 const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
-  const { data: studentsResponse } = useGetSectionStudentsQuery(
-    { sectionId },
-    { skip: !sectionId }
-  )
-  const { data: attendanceResponse } = useGetAttendanceRecordsQuery(
-    { sectionId },
-    { skip: !sectionId }
-  )
-  const { data: coursesResponse } = useGetSectionCoursesQuery(
-    { sectionId },
-    { skip: !sectionId }
-  )
+  const { data: studentsResponse, isLoading: studentsLoading } =
+    useGetSectionStudentsQuery({ sectionId }, { skip: !sectionId })
+  const { data: attendanceResponse, isLoading: attendanceLoading } =
+    useGetAttendanceRecordsQuery({ sectionId }, { skip: !sectionId })
+  const { data: coursesResponse, isLoading: coursesLoading } =
+    useGetSectionCoursesQuery({ sectionId }, { skip: !sectionId })
+
+  const isLoading = studentsLoading || attendanceLoading || coursesLoading
 
   const students = studentsResponse?.data?.data || []
   const attendance = attendanceResponse?.data?.data || []
@@ -250,45 +350,103 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
       title: 'Total Students',
       value: students.length,
       icon: Users,
-      color: 'bg-blue-500',
+      gradient: 'from-blue-500 to-cyan-500',
+      bgGradient: 'from-blue-50 to-cyan-50',
+      darkBgGradient: 'from-blue-900/40 to-cyan-900/40',
+      description: 'Enrolled in section',
     },
     {
       title: 'Available Courses',
       value: courses.length,
       icon: BookOpen,
-      color: 'bg-green-500',
+      gradient: 'from-green-500 to-emerald-500',
+      bgGradient: 'from-green-50 to-emerald-50',
+      darkBgGradient: 'from-green-900/40 to-emerald-900/40',
+      description: 'Active courses',
     },
     {
       title: "Today's Sessions",
       value: todayAttendance.length,
       icon: Clock,
-      color: 'bg-purple-500',
+      gradient: 'from-purple-500 to-pink-500',
+      bgGradient: 'from-purple-50 to-pink-50',
+      darkBgGradient: 'from-purple-900/40 to-pink-900/40',
+      description: 'Sessions recorded',
     },
     {
       title: 'Total Records',
       value: attendance.length,
       icon: CheckCircle,
-      color: 'bg-orange-500',
+      gradient: 'from-orange-500 to-red-500',
+      bgGradient: 'from-orange-50 to-red-50',
+      darkBgGradient: 'from-orange-900/40 to-red-900/40',
+      description: 'All-time records',
     },
   ]
 
+  // Loading skeleton component
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        {[1, 2, 3, 4].map((index) => (
+          <Card
+            key={index}
+            className="overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            style={{
+              animationDelay: `${index * 150}ms`,
+              animation: 'fadeInUp 0.8s ease-out forwards',
+            }}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-xl animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
+                    <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
+                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full"></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
       {stats.map((stat, index) => (
-        <Card key={index} className="border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        <Card
+          key={index}
+          className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500`}
+          style={{
+            animationDelay: `${index * 150}ms`,
+            animation: 'fadeInUp 0.8s ease-out forwards',
+          }}
+        >
+          <CardContent className="p-6 relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div
+                  className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
+                >
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
                   {stat.title}
                 </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2 group-hover:scale-105 transition-transform duration-300">
                   {stat.value}
                 </p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                  {stat.description}
+                </p>
               </div>
-              <div className={`p-3 rounded-full ${stat.color}`}>
-                <stat.icon className="h-6 w-6 text-white" />
-              </div>
+
+              {/* Decorative corner element */}
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
           </CardContent>
         </Card>
@@ -398,169 +556,316 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
   }
 
   return (
-    <Card className="mb-8">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Take Attendance</span>
+    <Card className="overflow-hidden shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Plus className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Take Attendance</h3>
+              <p className="text-blue-100 text-sm">
+                Record student attendance for your classes
+              </p>
+            </div>
+          </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button
+                className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                size="lg"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 New Attendance
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Take Attendance</DialogTitle>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="pb-6 border-b">
+                <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  Take Attendance
+                </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Course</label>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-6 sm:space-y-8 pt-6"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-blue-500" />
+                      Course
+                    </label>
                     <Select
                       onValueChange={(value) => {
                         setSelectedCourse(value)
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select course" />
+                      <SelectTrigger className="h-11 sm:h-12 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+                        <SelectValue placeholder="Choose a course to take attendance" />
                       </SelectTrigger>
                       <SelectContent>
                         {courses.map((course) => (
                           <SelectItem key={course._id} value={course._id}>
-                            {course.name} ({course.code})
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span className="truncate">
+                                {course.name} ({course.code})
+                              </span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Date</label>
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      Date
+                    </label>
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
                       <Input
                         {...register('date', { required: true })}
                         type="date"
-                        className="pl-10"
+                        className="h-11 sm:h-12 pl-12 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-700"
                         defaultValue={new Date().toISOString().split('T')[0]}
                       />
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
                       You can select any date (past, present, or future)
                     </p>
                   </div>
                 </div>
 
                 {selectedCourse && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">
-                        Student Attendance
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Users className="h-5 w-5 text-blue-500" />
+                        Student Attendance ({students.length} students)
                       </h3>
-                      <div className="space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={markAllPresent}
+                          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400"
                         >
-                          Mark All Present
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          All Present
                         </Button>
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={markAllAbsent}
+                          className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400"
                         >
-                          Mark All Absent
+                          <XCircle className="h-4 w-4 mr-2" />
+                          All Absent
                         </Button>
                       </div>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Student ID</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {[...students]
-                            .sort((a, b) => {
-                              const idA = a.studentId || ''
-                              const idB = b.studentId || ''
-                              return idA.localeCompare(idB, undefined, {
-                                numeric: true,
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block max-h-80 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+                        <Table>
+                          <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                            <TableRow>
+                              <TableHead className="font-semibold">
+                                Student ID
+                              </TableHead>
+                              <TableHead className="font-semibold">
+                                Name
+                              </TableHead>
+                              <TableHead className="font-semibold text-center">
+                                Attendance Status
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {[...students]
+                              .sort((a, b) => {
+                                const idA = a.studentId || ''
+                                const idB = b.studentId || ''
+                                return idA.localeCompare(idB, undefined, {
+                                  numeric: true,
+                                })
                               })
-                            })
-                            .map((student: Student) => (
-                              <TableRow key={student._id}>
-                                <TableCell>{student.studentId}</TableCell>
-                                <TableCell className="font-medium">
-                                  {student.name}
-                                </TableCell>
-                                <TableCell>{student.email}</TableCell>
-                                <TableCell>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant={
-                                        attendanceData[student._id] ===
-                                        'present'
-                                          ? 'default'
-                                          : 'outline'
-                                      }
-                                      onClick={() =>
-                                        handleAttendanceChange(
-                                          student._id,
+                              .map((student: Student) => (
+                                <TableRow
+                                  key={student._id}
+                                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                >
+                                  <TableCell className="font-medium">
+                                    {student.studentId}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {student.name}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex justify-center gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={
+                                          attendanceData[student._id] ===
                                           'present'
-                                        )
-                                      }
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Present
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant={
-                                        attendanceData[student._id] === 'absent'
-                                          ? 'destructive'
-                                          : 'outline'
-                                      }
-                                      onClick={() =>
-                                        handleAttendanceChange(
-                                          student._id,
+                                            ? 'default'
+                                            : 'outline'
+                                        }
+                                        onClick={() =>
+                                          handleAttendanceChange(
+                                            student._id,
+                                            'present'
+                                          )
+                                        }
+                                        className={
+                                          attendanceData[student._id] ===
+                                          'present'
+                                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                                            : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400'
+                                        }
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Present
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={
+                                          attendanceData[student._id] ===
                                           'absent'
-                                        )
-                                      }
-                                    >
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                      Absent
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
+                                            ? 'destructive'
+                                            : 'outline'
+                                        }
+                                        onClick={() =>
+                                          handleAttendanceChange(
+                                            student._id,
+                                            'absent'
+                                          )
+                                        }
+                                        className={
+                                          attendanceData[student._id] ===
+                                          'absent'
+                                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                                            : 'border-red-200 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400'
+                                        }
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Absent
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden max-h-80 overflow-y-auto space-y-3">
+                        {[...students]
+                          .sort((a, b) => {
+                            const idA = a.studentId || ''
+                            const idB = b.studentId || ''
+                            return idA.localeCompare(idB, undefined, {
+                              numeric: true,
+                            })
+                          })
+                          .map((student: Student) => (
+                            <div
+                              key={student._id}
+                              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
+                            >
+                              <div className="flex flex-col space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                    ID: {student.studentId}
+                                  </span>
+                                </div>
+                                <h4 className="font-semibold text-gray-900 dark:text-white">
+                                  {student.name}
+                                </h4>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    attendanceData[student._id] === 'present'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  onClick={() =>
+                                    handleAttendanceChange(
+                                      student._id,
+                                      'present'
+                                    )
+                                  }
+                                  className={`flex-1 ${
+                                    attendanceData[student._id] === 'present'
+                                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                                      : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400'
+                                  }`}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Present
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    attendanceData[student._id] === 'absent'
+                                      ? 'destructive'
+                                      : 'outline'
+                                  }
+                                  onClick={() =>
+                                    handleAttendanceChange(
+                                      student._id,
+                                      'absent'
+                                    )
+                                  }
+                                  className={`flex-1 ${
+                                    attendanceData[student._id] === 'absent'
+                                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                                      : 'border-red-200 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400'
+                                  }`}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Absent
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-end space-x-2">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
+                    className="order-2 sm:order-1"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={!selectedCourse}>
+                  <Button
+                    type="submit"
+                    disabled={!selectedCourse}
+                    className="order-1 sm:order-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
                     Save Attendance
                   </Button>
                 </div>
@@ -573,6 +878,566 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
         <p className="text-gray-600 dark:text-gray-400">
           Click "New Attendance" to record attendance for your section.
         </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Manage Attendance Reports Section Component
+const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+
+  // Get courses for display
+  const { data: coursesResponse } = useGetSectionCoursesQuery(
+    { sectionId },
+    { skip: !sectionId }
+  )
+  const courses = coursesResponse?.data?.data || []
+
+  // Get attendance records for this section and selected course
+  const { data: attendanceResponse, isLoading } = useGetAttendanceRecordsQuery({
+    sectionId,
+    courseId: selectedCourseId || undefined,
+    limit: 50,
+  })
+  const attendanceRecords = attendanceResponse?.data?.data || []
+
+  const handleEditRecord = (record: AttendanceRecord) => {
+    // For now, show a simple alert about editing functionality
+    toast.info(
+      `Edit functionality for record ${new Date(record.date).toLocaleDateString()} will be available soon!`
+    )
+  }
+
+  const handleDownloadPDF = async (record: AttendanceRecord) => {
+    try {
+      const response = await fetch(`/api/attendance/${record._id}/pdf`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+
+        const courseName = getCourseName(record.courseId)
+        const date = new Date(record.date)
+          .toLocaleDateString()
+          .replace(/\//g, '-')
+        link.download = `attendance-${courseName}-${date}.pdf`
+
+        document.body.appendChild(link)
+        link.click()
+
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(link)
+
+        toast.success('PDF downloaded successfully!')
+      } else {
+        throw new Error('Failed to download PDF')
+      }
+    } catch (error) {
+      console.error('[DOWNLOAD PDF] Error downloading PDF:', error)
+      toast.error('Failed to download PDF. Please try again.')
+    }
+  }
+
+  const getCourseName = (
+    courseId: string | { _id: string; name: string; code?: string }
+  ) => {
+    if (typeof courseId === 'string') {
+      const course = courses.find((c) => c._id === courseId)
+      return course ? `${course.name} (${course.code})` : courseId
+    }
+    return `${courseId.name} (${courseId.code || ''})`
+  }
+
+  return (
+    <Card className="overflow-hidden shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Manage Attendance Reports</h3>
+              <p className="text-orange-100 text-sm">
+                Select course and download specific session reports or edit
+                attendance
+              </p>
+            </div>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        {/* Course Selection */}
+        <div className="mb-6 space-y-3">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Select Course
+          </h4>
+          <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose a course to view attendance records" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Courses</SelectItem>
+              {courses.map((course) => (
+                <SelectItem key={course._id} value={course._id}>
+                  {course.name} ({course.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 mx-auto mb-4 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            <p className="text-gray-600 dark:text-gray-400">
+              Loading attendance records...
+            </p>
+          </div>
+        ) : !selectedCourseId ? (
+          <div className="text-center py-8">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Select a Course
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              Choose a course from the dropdown above to view and manage
+              attendance records.
+            </p>
+          </div>
+        ) : attendanceRecords.length === 0 ? (
+          <div className="text-center py-8">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              No Attendance Records
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              No attendance records found for the selected course.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Recent Attendance Records ({attendanceRecords.length})
+            </h4>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                  <TableRow>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">Course</TableHead>
+                    <TableHead className="font-semibold text-center">
+                      Students
+                    </TableHead>
+                    <TableHead className="font-semibold text-center">
+                      Present
+                    </TableHead>
+                    <TableHead className="font-semibold text-center">
+                      Attendance %
+                    </TableHead>
+                    <TableHead className="font-semibold text-center">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attendanceRecords.map((record) => {
+                    const totalStudents = record.attendees.length
+                    const presentStudents = record.attendees.filter(
+                      (a) => a.status === 'present'
+                    ).length
+                    const attendancePercentage =
+                      totalStudents > 0
+                        ? ((presentStudents / totalStudents) * 100).toFixed(1)
+                        : '0'
+
+                    return (
+                      <TableRow
+                        key={record._id}
+                        className="hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                      >
+                        <TableCell className="font-medium">
+                          {new Date(record.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {getCourseName(record.courseId)}
+                        </TableCell>
+                        <TableCell className="text-center font-bold">
+                          {totalStudents}
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-green-600">
+                          {presentStudents}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              parseFloat(attendancePercentage) >= 80
+                                ? 'bg-green-100 text-green-800'
+                                : parseFloat(attendancePercentage) >= 60
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {attendancePercentage}%
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditRecord(record)}
+                              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                            >
+                              <FileText className="h-3 w-3 mr-1" />
+                              Edit attendance
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadPDF(record)}
+                              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download PDF
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {attendanceRecords.map((record) => {
+                const totalStudents = record.attendees.length
+                const presentStudents = record.attendees.filter(
+                  (a) => a.status === 'present'
+                ).length
+                const attendancePercentage =
+                  totalStudents > 0
+                    ? ((presentStudents / totalStudents) * 100).toFixed(1)
+                    : '0'
+
+                return (
+                  <div
+                    key={record._id}
+                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h5 className="font-semibold text-gray-900 dark:text-white">
+                          {new Date(record.date).toLocaleDateString()}
+                        </h5>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {getCourseName(record.courseId)}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          parseFloat(attendancePercentage) >= 80
+                            ? 'bg-green-100 text-green-800'
+                            : parseFloat(attendancePercentage) >= 60
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {attendancePercentage}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Present:{' '}
+                        <span className="font-bold text-green-600">
+                          {presentStudents}
+                        </span>{' '}
+                        / {totalStudents}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditRecord(record)}
+                          className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadPDF(record)}
+                          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Download Reports Section Component
+const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
+  const [selectedCourse, setSelectedCourse] = useState<string>('')
+  const [availableSessions, setAvailableSessions] = useState<
+    AttendanceRecord[]
+  >([])
+
+  // Get courses for the CR's section
+  const { data: coursesResponse } = useGetSectionCoursesQuery(
+    { sectionId },
+    { skip: !sectionId }
+  )
+  const courses = coursesResponse?.data?.data || []
+
+  // Get all attendance records for the selected course
+  const { data: attendanceResponse } = useGetAttendanceRecordsQuery({
+    sectionId,
+  })
+
+  // Memoize allAttendance to prevent unnecessary re-renders
+  const allAttendance = React.useMemo(() => {
+    return attendanceResponse?.data?.data || []
+  }, [attendanceResponse?.data?.data])
+
+  // Filter sessions by selected course
+  React.useEffect(() => {
+    if (selectedCourse && allAttendance.length > 0) {
+      const courseSessions = allAttendance
+        .filter((record) => {
+          if (typeof record.courseId === 'string') {
+            return record.courseId === selectedCourse
+          }
+          return record.courseId._id === selectedCourse
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      setAvailableSessions(courseSessions)
+    } else {
+      setAvailableSessions([])
+    }
+  }, [selectedCourse, allAttendance])
+
+  const [downloadAttendancePDF] = useDownloadAttendancePDFMutation()
+
+  const downloadSessionPDF = async (
+    attendanceId: string,
+    courseName: string,
+    date: string
+  ) => {
+    try {
+      console.log(
+        '[PDF DOWNLOAD] Starting download for attendance:',
+        attendanceId
+      )
+
+      const blob = await downloadAttendancePDF(attendanceId).unwrap()
+      console.log('[PDF DOWNLOAD] PDF blob received, size:', blob.size)
+
+      if (blob.size === 0) {
+        throw new Error('Received empty PDF file')
+      }
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${courseName}-attendance-${date}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      // You can add a toast notification here
+      console.log('[PDF DOWNLOAD] Success!')
+    } catch (error) {
+      console.error('[PDF DOWNLOAD] Error:', error)
+
+      let errorMessage = 'Failed to download PDF'
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 403) {
+          errorMessage =
+            'You do not have permission to download this attendance record'
+        } else if (error.status === 404) {
+          errorMessage = 'Attendance record not found'
+        }
+      }
+
+      // You can add a toast notification here
+      alert(errorMessage)
+    }
+  }
+
+  return (
+    <Card className="overflow-hidden shadow-xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Download className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Download Attendance Reports</h3>
+              <p className="text-emerald-100 text-sm">
+                Select course and download specific session reports
+              </p>
+            </div>
+          </div>
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          {/* Course Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-emerald-500" />
+              Select Course
+            </label>
+            <Select
+              onValueChange={(value) => {
+                setSelectedCourse(value)
+              }}
+              value={selectedCourse}
+            >
+              <SelectTrigger className="h-12 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-700">
+                <SelectValue placeholder="Choose a course to view attendance sessions" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((course) => (
+                  <SelectItem key={course._id} value={course._id}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      <span className="font-medium">{course.name}</span>
+                      <span className="text-sm text-gray-500">
+                        ({course.code})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Available Sessions */}
+          {selectedCourse && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-emerald-500" />
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Available Sessions ({availableSessions.length})
+                </h4>
+              </div>
+
+              {availableSessions.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No attendance sessions found for this course
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {availableSessions.map((session) => {
+                    const courseName =
+                      typeof session.courseId === 'string'
+                        ? session.courseId
+                        : session.courseId.name
+                    const courseCode =
+                      typeof session.courseId === 'string'
+                        ? ''
+                        : session.courseId.code
+                    const date = new Date(session.date).toLocaleDateString()
+                    const totalStudents = session.attendees.length
+                    const presentStudents = session.attendees.filter(
+                      (a) => a.status === 'present'
+                    ).length
+                    const attendancePercentage =
+                      totalStudents > 0
+                        ? Math.round((presentStudents / totalStudents) * 100)
+                        : 0
+
+                    return (
+                      <div
+                        key={session._id}
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {date}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {courseName} {courseCode && `(${courseCode})`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {presentStudents}/{totalStudents} present
+                            </span>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                attendancePercentage >= 80
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : attendancePercentage >= 60
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              }`}
+                            >
+                              {attendancePercentage}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={() =>
+                            downloadSessionPDF(session._id, courseName, date)
+                          }
+                          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                          size="sm"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span className="hidden sm:inline">Download PDF</span>
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!selectedCourse && (
+            <div className="text-center py-8">
+              <BookOpen className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400">
+                Select a course to view available attendance sessions
+              </p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -646,96 +1511,162 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
     }
   }
 
-  if (isLoading) return <div>Loading attendance records...</div>
+  if (isLoading) {
+    return (
+      <Card className="shadow-lg border-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+        <div className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading attendance records...
+          </p>
+        </div>
+      </Card>
+    )
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Attendance Records</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Total Students</TableHead>
-                <TableHead>Present</TableHead>
-                <TableHead>Absent</TableHead>
-                <TableHead>Attendance %</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentAttendance.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-gray-500 py-8"
-                  >
-                    No attendance records found. Start by taking attendance!
-                  </TableCell>
-                </TableRow>
-              ) : (
-                recentAttendance.map((record: AttendanceRecord) => {
-                  const totalStudents = record.attendees.length
-                  const presentStudents = record.attendees.filter(
-                    (a) => a.status === 'present'
-                  ).length
-                  const attendancePercentage =
-                    totalStudents > 0
-                      ? ((presentStudents / totalStudents) * 100).toFixed(1)
-                      : '0'
-
-                  return (
-                    <TableRow key={record._id}>
-                      <TableCell>
-                        {new Date(record.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {typeof record.courseId === 'string'
-                          ? record.courseId
-                          : `${record.courseId.name} (${record.courseId.code})`}
-                      </TableCell>
-                      <TableCell>{totalStudents}</TableCell>
-                      <TableCell className="text-green-600">
-                        {presentStudents}
-                      </TableCell>
-                      <TableCell className="text-red-600">
-                        {totalStudents - presentStudents}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            parseFloat(attendancePercentage) >= 80
-                              ? 'bg-green-100 text-green-800'
-                              : parseFloat(attendancePercentage) >= 60
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {attendancePercentage}%
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => downloadPDF(record._id)}
-                          className="flex items-center gap-1"
-                        >
-                          <FileText className="h-3 w-3" />
-                          PDF
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
+    <Card className="shadow-lg border-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-lg">
+        <div className="flex items-center space-x-3">
+          <Clock className="h-6 w-6 text-white" />
+          <h3 className="text-xl font-semibold text-white">
+            Recent Attendance Records
+          </h3>
         </div>
+      </div>
+
+      <CardContent className="p-6">
+        {recentAttendance.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+              No attendance records yet
+            </p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+              Start taking attendance to see records here
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentAttendance.slice(0, 5).map((record: AttendanceRecord) => {
+              const totalStudents = record.attendees.length
+              const presentStudents = record.attendees.filter(
+                (a) => a.status === 'present'
+              ).length
+              const attendancePercentage =
+                totalStudents > 0
+                  ? ((presentStudents / totalStudents) * 100).toFixed(1)
+                  : '0'
+
+              return (
+                <div
+                  key={record._id}
+                  className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <BookOpen className="h-4 w-4 text-green-500" />
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {typeof record.courseId === 'string'
+                            ? record.courseId
+                            : record.courseId.name}
+                        </span>
+                        {typeof record.courseId === 'object' &&
+                          record.courseId.code && (
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              ({record.courseId.code})
+                            </span>
+                          )}
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {new Date(record.date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-3 w-3" />
+                          <span>{presentStudents} present</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {presentStudents}/{totalStudents}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {attendancePercentage}% present
+                        </div>
+                      </div>
+
+                      <div className="w-12 h-12 relative">
+                        <svg
+                          className="w-12 h-12 transform -rotate-90"
+                          viewBox="0 0 36 36"
+                        >
+                          <path
+                            className="text-gray-200 dark:text-gray-600"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                          <path
+                            className={`${
+                              parseFloat(attendancePercentage) >= 80
+                                ? 'text-green-500'
+                                : parseFloat(attendancePercentage) >= 60
+                                  ? 'text-yellow-500'
+                                  : 'text-red-500'
+                            }`}
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeDasharray={`${parseFloat(attendancePercentage)}, 100`}
+                            strokeLinecap="round"
+                            fill="none"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                            {attendancePercentage}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadPDF(record._id)}
+                        className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                      >
+                        <FileText className="h-3 w-3" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {recentAttendance.length > 5 && (
+              <div className="text-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => (window.location.href = '/attendance-history')}
+                  className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20"
+                >
+                  View All Records
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

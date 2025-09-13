@@ -31,12 +31,16 @@ function App() {
               }
             />
             <Route
-              path="/cr"
+              path="/admin-dashboard"
               element={
-                <PrivateRoute requiredRole="cr">
-                  <CRDashboard />
+                <PrivateRoute requiredRole="admin">
+                  <AdminDashboard />
                 </PrivateRoute>
               }
+            />
+            <Route
+              path="/cr"
+              element={<Navigate to="/cr-dashboard" replace />}
             />
             <Route
               path="/cr-dashboard"
@@ -49,10 +53,14 @@ function App() {
             <Route
               path="/attendance-history"
               element={
-                <PrivateRoute>
+                <PrivateRoute requiredRole="admin">
                   <AttendanceHistory />
                 </PrivateRoute>
               }
+            />
+            <Route
+              path="/attendance"
+              element={<Navigate to="/attendance-history" replace />}
             />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>

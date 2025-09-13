@@ -6,15 +6,15 @@ import helmet from 'helmet';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
 
+import connectDB from './config/database';
 import { globalErrorHandler, notFoundHandler } from './middleware';
 import { router } from './routes';
-import connectDB from './config/database';
 
 const app = express();
 
 // Env setup
-const NODE_ENV = process.env.NODE_ENV || 'production';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://diucrportal.vercel.app';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 
 app.set('trust proxy', 1);
