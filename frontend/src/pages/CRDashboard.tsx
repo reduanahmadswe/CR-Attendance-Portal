@@ -35,7 +35,7 @@ import {
   useUpdateAttendanceRecordMutation,
 } from '@/lib/apiSlice'
 import type { RootState } from '@/lib/simpleStore'
-import type { AttendanceRecord, Student } from '@/types'
+import type { AttendanceRecord, Course, Student } from '@/types'
 import {
   BookOpen,
   Calendar,
@@ -43,9 +43,7 @@ import {
   Clock,
   Download,
   Edit,
-  ExternalLink,
   FileText,
-  History,
   LogOut,
   Plus,
   Users,
@@ -84,6 +82,36 @@ export function CRDashboard() {
     'dashboard'
   )
 
+  // Use authUser from context if available, fallback to Redux user
+  const currentUser = authUser || user
+
+  // Main data fetching for the entire dashboard - to avoid duplicate API calls
+  const finalSectionId =
+    typeof currentUser?.sectionId === 'string'
+      ? currentUser.sectionId
+      : currentUser?.sectionId?._id || ''
+
+  const { data: mainStudentsResponse, isLoading: studentsLoading } =
+    useGetSectionStudentsQuery(
+      { sectionId: finalSectionId },
+      { skip: !finalSectionId }
+    )
+  const { data: mainAttendanceResponse, isLoading: attendanceLoading } =
+    useGetAttendanceRecordsQuery(
+      { sectionId: finalSectionId },
+      { skip: !finalSectionId }
+    )
+  const { data: mainCoursesResponse, isLoading: coursesLoading } =
+    useGetSectionCoursesQuery(
+      { sectionId: finalSectionId },
+      { skip: !finalSectionId }
+    )
+
+  const mainDataLoading = studentsLoading || attendanceLoading || coursesLoading
+  const mainStudents = mainStudentsResponse?.data?.data || []
+  const mainAttendance = mainAttendanceResponse?.data?.data || []
+  const mainCourses = mainCoursesResponse?.data?.data || []
+
   // Fetch section students for proper name/ID display in edit modal
   // Note: This uses user or authUser sectionId, might be undefined initially
   const tempSectionId = user?.sectionId || authUser?.sectionId
@@ -119,7 +147,7 @@ export function CRDashboard() {
   }
 
   // Use authUser from context if available, fallback to Redux user
-  const currentUser = authUser || user
+  // const currentUser = authUser || user (moved to top)
 
   // Helper function to get student info by ID
   const getStudentInfo = (studentId: string) => {
@@ -183,10 +211,6 @@ export function CRDashboard() {
       // Still navigate to login even if logout fails
       window.location.href = '/auth/login'
     }
-  }
-
-  const handleNavigateToHistory = () => {
-    navigate('/reports/attendance-history')
   }
 
   if (!currentUser) {
@@ -375,15 +399,6 @@ export function CRDashboard() {
             {/* Actions with enhanced styling */}
             <div className="flex items-center gap-3">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNavigateToHistory}
-                className="flex items-center gap-2 h-10 px-4 border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 dark:hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm"
-              >
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">History</span>
-              </Button>
-              <Button
                 variant={activeSection === 'reports' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() =>
@@ -438,39 +453,27 @@ export function CRDashboard() {
       {/* Main Content with enhanced spacing and backdrop */}
       <main className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
         <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
-          {/* Enhanced Welcome Message */}
-          <div className="text-center py-8 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-800/20 rounded-2xl backdrop-blur-sm"></div>
-            <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-4 animate-gradient leading-tight">
-                {activeSection === 'dashboard'
-                  ? 'Attendance Management Hub'
-                  : 'Attendance Reports'}
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
-                {activeSection === 'dashboard'
-                  ? 'Take attendance, track student participation, and generate comprehensive reports'
-                  : 'View, edit, and download attendance reports for your section'}
-                <span className="block mt-2 text-base text-gray-500 dark:text-gray-400">
-                  ✨ Modern • Efficient • Powerful
-                </span>
-              </p>
-            </div>
-          </div>
-
           {/* Conditional Content Based on Active Section */}
           <div className="transition-all duration-500 ease-in-out">
             {activeSection === 'dashboard' ? (
               <div className="space-y-8 sm:space-y-12 animate-in fade-in-0 slide-in-from-left-4 duration-500">
                 {/* Quick Stats */}
-                <CRStatsCards sectionId={sectionId} />
+                <CRStatsCards
+                  students={mainStudents}
+                  attendance={mainAttendance}
+                  courses={mainCourses}
+                  isLoading={mainDataLoading}
+                />
 
                 {/* Take Attendance Section */}
                 <TakeAttendanceSection sectionId={sectionId} />
 
                 {/* Recent Attendance Records */}
                 <ErrorBoundary>
-                  <RecentAttendanceSection sectionId={sectionId} />
+                  <RecentAttendanceSection
+                    attendance={mainAttendance}
+                    isLoading={mainDataLoading}
+                  />
                 </ErrorBoundary>
               </div>
             ) : (
@@ -631,20 +634,17 @@ export function CRDashboard() {
 }
 
 // CR Stats Cards Component
-const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
-  const { data: studentsResponse, isLoading: studentsLoading } =
-    useGetSectionStudentsQuery({ sectionId }, { skip: !sectionId })
-  const { data: attendanceResponse, isLoading: attendanceLoading } =
-    useGetAttendanceRecordsQuery({ sectionId }, { skip: !sectionId })
-  const { data: coursesResponse, isLoading: coursesLoading } =
-    useGetSectionCoursesQuery({ sectionId }, { skip: !sectionId })
-
-  const isLoading = studentsLoading || attendanceLoading || coursesLoading
-
-  const students = studentsResponse?.data?.data || []
-  const attendance = attendanceResponse?.data?.data || []
-  const courses = coursesResponse?.data?.data || []
-
+const CRStatsCards = ({
+  students,
+  attendance,
+  courses,
+  isLoading = false,
+}: {
+  students: Student[]
+  attendance: AttendanceRecord[]
+  courses: Course[]
+  isLoading?: boolean
+}) => {
   const todayAttendance = attendance.filter((record) => {
     const recordDate = new Date(record.date)
     const today = new Date()
@@ -693,7 +693,7 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
   // Loading skeleton component
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
         {[1, 2, 3, 4].map((index) => (
           <Card
             key={index}
@@ -703,14 +703,14 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
               animation: 'fadeInUp 0.8s ease-out forwards',
             }}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
               <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-xl animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
-                    <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
-                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full"></div>
+                <div className="flex-1 space-y-2 sm:space-y-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg lg:rounded-xl animate-pulse"></div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="h-3 sm:h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
+                    <div className="h-5 sm:h-6 lg:h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
+                    <div className="h-2 sm:h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full hidden sm:block"></div>
                   </div>
                 </div>
               </div>
@@ -722,7 +722,7 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
       {stats.map((stat, index) => (
         <Card
           key={index}
@@ -732,21 +732,21 @@ const CRStatsCards = ({ sectionId }: { sectionId: string }) => {
             animation: 'fadeInUp 0.8s ease-out forwards',
           }}
         >
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div
-                  className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
+                  className={`inline-flex p-2 sm:p-2.5 lg:p-3 rounded-lg lg:rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
                 >
-                  <stat.icon className="h-6 w-6 text-white" />
+                  <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
+                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1 sm:mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
                   {stat.title}
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2 group-hover:scale-105 transition-transform duration-300">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-1 sm:mb-2 group-hover:scale-105 transition-transform duration-300">
                   {stat.value}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium hidden sm:block lg:block">
                   {stat.description}
                 </p>
               </div>
@@ -1646,13 +1646,13 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
 }
 
 // Recent Attendance Section Component
-const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
-  const { data: attendanceResponse, isLoading } = useGetAttendanceRecordsQuery({
-    sectionId,
-  })
-
-  const attendance = attendanceResponse?.data?.data || []
-
+const RecentAttendanceSection = ({
+  attendance,
+  isLoading = false,
+}: {
+  attendance: AttendanceRecord[]
+  isLoading?: boolean
+}) => {
   // Defensive check to ensure attendance is an array
   const safeAttendance = Array.isArray(attendance) ? attendance : []
 
@@ -1854,19 +1854,6 @@ const RecentAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                 </div>
               )
             })}
-
-            {recentAttendance.length > 5 && (
-              <div className="text-center pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => (window.location.href = '/attendance-history')}
-                  className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20"
-                >
-                  View All Records
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </CardContent>

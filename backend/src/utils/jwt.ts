@@ -5,11 +5,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key';
 
 export const generateAccessToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
 };
 
 export const generateRefreshToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
-    return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '90d' });
 };
 
 export const verifyAccessToken = (token: string): JWTPayload => {

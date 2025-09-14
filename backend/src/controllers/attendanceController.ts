@@ -361,6 +361,12 @@ export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, r
         console.log('[PDF DOWNLOAD] Generating PDF...');
         const startTime = Date.now();
 
+        // Validate record data before generating PDF
+        if (!record.attendees || !Array.isArray(record.attendees) || record.attendees.length === 0) {
+            console.error('[PDF DOWNLOAD] No attendees data found');
+            throw new AppError('No attendees data found for this attendance record', 400);
+        }
+
         const pdfBuffer = await generateAttendancePDF(record as any);
 
         const generationTime = Date.now() - startTime;
@@ -397,13 +403,24 @@ export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, r
             stack: error instanceof Error ? error.stack : undefined,
             attendanceId: id,
             userId: req.user?.userId,
-            timestamp: new Date().toISOString()
+            userRole: req.user?.role,
+            timestamp: new Date().toISOString(),
+            errorType: error?.constructor?.name
         });
 
+        // Send more specific error responses
         if (error instanceof AppError) {
             throw error;
+        } else if (error instanceof Error) {
+            if (error.message.includes('PDF generation failed')) {
+                throw new AppError('Failed to generate PDF document. Please try again later.', 500);
+            } else if (error.message.includes('buffer')) {
+                throw new AppError('PDF generation failed due to internal buffer error.', 500);
+            } else {
+                throw new AppError(`PDF generation failed: ${error.message}`, 500);
+            }
         } else {
-            throw new AppError(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+            throw new AppError('PDF generation failed due to unknown error', 500);
         }
     }
 });
