@@ -423,10 +423,13 @@ export function CRDashboard() {
               <Button
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium"
+                disabled={auth?.isLoggingOut}
+                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">
+                  {auth?.isLoggingOut ? 'Logging out...' : 'Logout'}
+                </span>
               </Button>
             </div>
           </div>
@@ -495,9 +498,9 @@ export function CRDashboard() {
       {/* Edit Attendance Modal */}
       {isEditModalOpen && (
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
+          <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[90vh] overflow-hidden flex flex-col p-0">
+            <DialogHeader className="px-4 py-3 border-b flex-shrink-0">
+              <DialogTitle className="text-lg sm:text-xl font-bold">
                 Edit Attendance -{' '}
                 {editingRecord &&
                   new Date(editingRecord.date).toLocaleDateString()}
@@ -505,124 +508,137 @@ export function CRDashboard() {
             </DialogHeader>
 
             {editingRecord && (
-              <div className="space-y-4">
+              <div className="flex flex-col h-full overflow-hidden">
+                {/* Course Info - Fixed header */}
+                <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b flex-shrink-0">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 text-sm sm:text-base">
+                    Course:{' '}
+                    {typeof editingRecord.courseId === 'string'
+                      ? editingRecord.courseId
+                      : `${editingRecord.courseId.name} (${editingRecord.courseId.code})`}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-300">
+                    Date: {new Date(editingRecord.date).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Loading state */}
                 {sectionStudents.length === 0 && (
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                  <div className="px-4 py-3 bg-yellow-50 dark:bg-yellow-900/20 border-b flex-shrink-0">
+                    <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
                       <Clock className="h-4 w-4" />
                       Loading student information...
                     </p>
                   </div>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <h3 className="font-semibold text-blue-800 dark:text-blue-200">
-                    Course:{' '}
-                    {typeof editingRecord.courseId === 'string'
-                      ? editingRecord.courseId
-                      : `${editingRecord.courseId.name} (${editingRecord.courseId.code})`}
-                  </h3>
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
-                    Date: {new Date(editingRecord.date).toLocaleDateString()}
-                  </p>
-                </div>
+                {/* Students List - Scrollable content */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <div className="px-4 py-3 border-b flex-shrink-0">
+                    <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
+                      Student Attendance ({editingRecord.attendees.length}{' '}
+                      students)
+                    </h4>
+                  </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">
-                    Student Attendance ({editingRecord.attendees.length}{' '}
-                    students)
-                  </h4>
+                  <div className="flex-1 overflow-y-auto px-4 py-2">
+                    <div className="space-y-2">
+                      {editingRecord.attendees.map((attendee) => {
+                        const studentId =
+                          typeof attendee.studentId === 'string'
+                            ? attendee.studentId
+                            : attendee.studentId._id
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {editingRecord.attendees.map((attendee) => {
-                      const studentId =
-                        typeof attendee.studentId === 'string'
-                          ? attendee.studentId
-                          : attendee.studentId._id
+                        // Get proper student info using helper function
+                        const studentInfo = getStudentInfo(studentId)
 
-                      // Get proper student info using helper function
-                      const studentInfo = getStudentInfo(studentId)
-
-                      return (
-                        <div
-                          key={studentId}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-sm font-medium">
-                                {studentInfo.name.charAt(0) || 'S'}
-                              </span>
+                        return (
+                          <div
+                            key={studentId}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg gap-3 sm:gap-0"
+                          >
+                            {/* Student Info */}
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-xs sm:text-sm font-medium">
+                                  {studentInfo.name.charAt(0) || 'S'}
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                                  {studentInfo.name}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                  ID: {studentInfo.studentId}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {studentInfo.name}
-                              </p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                ID: {studentInfo.studentId}
-                              </p>
+
+                            {/* Status Buttons */}
+                            <div className="flex space-x-2 w-full sm:w-auto">
+                              <Button
+                                size="sm"
+                                variant={
+                                  editingStudents[studentId] === 'present'
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                onClick={() =>
+                                  handleStatusChange(studentId, 'present')
+                                }
+                                className={`flex-1 sm:flex-none text-xs sm:text-sm ${
+                                  editingStudents[studentId] === 'present'
+                                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                                    : 'border-green-300 text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                }`}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Present
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={
+                                  editingStudents[studentId] === 'absent'
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                onClick={() =>
+                                  handleStatusChange(studentId, 'absent')
+                                }
+                                className={`flex-1 sm:flex-none text-xs sm:text-sm ${
+                                  editingStudents[studentId] === 'absent'
+                                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                                    : 'border-red-300 text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                }`}
+                              >
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Absent
+                              </Button>
                             </div>
                           </div>
-
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant={
-                                editingStudents[studentId] === 'present'
-                                  ? 'default'
-                                  : 'outline'
-                              }
-                              onClick={() =>
-                                handleStatusChange(studentId, 'present')
-                              }
-                              className={`${
-                                editingStudents[studentId] === 'present'
-                                  ? 'bg-green-500 hover:bg-green-600 text-white'
-                                  : 'border-green-300 text-green-700 hover:bg-green-50'
-                              }`}
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Present
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={
-                                editingStudents[studentId] === 'absent'
-                                  ? 'default'
-                                  : 'outline'
-                              }
-                              onClick={() =>
-                                handleStatusChange(studentId, 'absent')
-                              }
-                              className={`${
-                                editingStudents[studentId] === 'absent'
-                                  ? 'bg-red-500 hover:bg-red-600 text-white'
-                                  : 'border-red-300 text-red-700 hover:bg-red-50'
-                              }`}
-                            >
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Absent
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditModalOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveEdit}
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                  >
-                    Save Changes
-                  </Button>
+                {/* Action Buttons - Fixed footer */}
+                <div className="px-4 py-3 border-t bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="w-full sm:w-auto"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveEdit}
+                      className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

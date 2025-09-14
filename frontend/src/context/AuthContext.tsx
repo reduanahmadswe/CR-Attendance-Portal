@@ -8,12 +8,13 @@ import { clearCredentials, setCredentials } from '@/lib/authSlice'
 import type { RootState } from '@/lib/simpleStore'
 import type { User } from '@/types'
 import type { ReactNode } from 'react'
-import { createContext, useContext, useEffect } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
+  isLoggingOut: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<User>
   logout: (redirectToLogin?: boolean) => Promise<void>
@@ -26,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, accessToken, isAuthenticated, isLoading } = useSelector(
     (state: RootState) => state.auth
   )
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const [loginMutation] = useLoginMutation()
   const [logoutMutation] = useLogoutMutation()
@@ -87,43 +90,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [profileData, profileError, accessToken, dispatch, profileLoading])
 
   const login = async (email: string, password: string) => {
-    const result = await loginMutation({ email, password }).unwrap()
-    if (result.success && result.data) {
-      dispatch(
-        setCredentials({
-          user: result.data.user,
-          accessToken: result.data.accessToken,
-        })
-      )
-      return result.data.user // Return user data for immediate use
+    console.log('[AUTH CONTEXT] Login function called for:', email)
+
+    try {
+      const result = await loginMutation({ email, password }).unwrap()
+
+      if (result.success && result.data) {
+        console.log(
+          '[AUTH CONTEXT] Login successful, setting credentials immediately'
+        )
+        dispatch(
+          setCredentials({
+            user: result.data.user,
+            accessToken: result.data.accessToken,
+          })
+        )
+        return result.data.user // Return user data for immediate use
+      }
+
+      throw new Error(result.message || 'Login failed')
+    } catch (error) {
+      console.error('[AUTH CONTEXT] Login failed:', error)
+      // Clear any stale credentials on login failure
+      dispatch(clearCredentials())
+      throw error
     }
-    throw new Error('Login failed')
   }
 
   const logout = async (redirectToLogin = true) => {
     console.log('[AUTH CONTEXT] Logout function called')
+
+    // Set logging out state for UI feedback
+    setIsLoggingOut(true)
+
+    // Clear credentials immediately for instant UI response
+    console.log('[AUTH CONTEXT] Clearing credentials immediately')
+    dispatch(clearCredentials())
+
     try {
       console.log('[AUTH CONTEXT] Making logout API call')
       await logoutMutation().unwrap()
       console.log('[AUTH CONTEXT] Logout API call successful')
     } catch (error) {
-      // Even if logout fails on server, clear local state
+      // Credentials already cleared, so just log the error
       console.error('[AUTH CONTEXT] Logout API error:', error)
     } finally {
-      console.log('[AUTH CONTEXT] Clearing credentials')
-      dispatch(clearCredentials())
-      console.log('[AUTH CONTEXT] Credentials cleared')
+      setIsLoggingOut(false)
+    }
 
-      if (redirectToLogin) {
-        // Force redirect to login page
-        window.location.href = '/auth/login'
-      }
+    if (redirectToLogin) {
+      // Force redirect to login page
+      window.location.href = '/auth/login'
     }
   }
 
   const value: AuthContextType = {
     user,
     isLoading: profileLoading || (isLoading && Boolean(accessToken)),
+    isLoggingOut,
     isAuthenticated,
     login,
     logout,

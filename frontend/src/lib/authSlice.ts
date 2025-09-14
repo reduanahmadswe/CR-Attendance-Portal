@@ -41,6 +41,8 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             state.isLoading = false;
             localStorage.removeItem('accessToken');
+            // Also remove any other auth-related localStorage items
+            localStorage.removeItem('refreshToken');
         },
         updateUser: (state, action: PayloadAction<User>) => {
             console.log('[AUTH SLICE] Updating user data:', action.payload.email);

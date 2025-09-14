@@ -11,7 +11,7 @@ interface PopulatedAttendanceRecord extends Omit<IAttendanceRecord, 'sectionId' 
   takenBy: IUser;
   attendees: Array<{
     studentId: IStudent;
-    status: 'present' | 'absent';
+    status: 'present' | 'absent' | 'late' | 'excused';
     note?: string;
   }>;
 }
@@ -36,28 +36,16 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
   console.log('[PDF GENERATOR] Using jsPDF for PDF generation...');
 
   try {
-    // Initialize jsPDF with modern settings
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    const doc = new jsPDF();
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentWidth = pageWidth - (margin * 2);
+    const margin = 20;
 
     // Safely extract data with fallbacks
     const sectionName = record.sectionId?.name || 'Unknown Section';
     const courseName = record.courseId?.name || 'Unknown Course';
-    const date = new Date(record.date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    const takenByName = record.takenBy?.name || 'Unknown';
+    const date = new Date(record.date).toLocaleDateString('en-US');
 
     console.log('[PDF GENERATOR] Processing record for:', { sectionName, courseName, date });
 
@@ -75,22 +63,33 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
 
     console.log('[PDF GENERATOR] Processing', sortedAttendees.length, 'attendees');
 
-    // Define colors for the modern design
-    const colors = {
-      primary: '#3B82F6',
-      secondary: '#64748B',
-      success: '#10B981',
-      danger: '#EF4444',
-      warning: '#F59E0B',
-      info: '#8B5CF6',
-      light: '#F8FAFC',
-      dark: '#1E293B',
-      border: '#E2E8F0'
+    const addWatermark = () => {
+      try {
+        // Simple watermark without graphics state manipulation that might fail
+        doc.setTextColor(200, 200, 200); // Light gray
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(60);
+
+        // Calculate center position and add rotated text
+        const centerX = pageWidth / 2;
+        const centerY = pageHeight / 2;
+
+        // Add watermark text
+        doc.text(sectionName, centerX, centerY, {
+          angle: -45,
+          align: 'center'
+        });
+
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
+      } catch (error) {
+        console.warn('[PDF GENERATOR] Watermark failed, continuing without it:', error);
+        // Continue without watermark if it fails
+      }
     };
 
-
     const addDisclaimer = () => {
-      const disclaimerText = `Disclaimer: CR Attendance portal is not affiliated with any university. It was created to help Class Representatives quickly prepare notebook attendance when needed. This record is intended for Section ${sectionName}.`;
+      const disclaimerText = `Disclaimer: CR Attendance portal is not affiliated with university. It was created to help Class Representatives quickly prepare notebook attendance when needed. This record is intended for Section ${sectionName}.`;
 
       // Create a styled box for disclaimer
       const boxMargin = 15;
@@ -99,144 +98,109 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
 
       // Draw light blue disclaimer box
       doc.setFillColor(219, 234, 254); // Light blue background
-      doc.roundedRect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 3, 3, 'F');
+      doc.rect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 'F');
 
       // Draw blue border
       doc.setDrawColor(59, 130, 246); // Blue border
-      doc.setLineWidth(0.5);
-      doc.roundedRect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 3, 3, 'S');
+      doc.setLineWidth(1);
+      doc.rect(boxMargin, boxY, pageWidth - 2 * boxMargin, boxHeight, 'S');
 
       // Add disclaimer text
       doc.setTextColor(30, 64, 175); // Dark blue text
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
 
-      const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
-      const textY = boxY + 10;
-      doc.text(splitText, pageWidth / 2, textY, {
-        align: 'center'
+      const textY = boxY + 8;
+      doc.text(disclaimerText, pageWidth / 2, textY, {
+        align: 'center',
+        maxWidth: pageWidth - 40
       });
+
     };
 
     const addPageNumber = (currentPage: number, totalPages: number) => {
       doc.setTextColor(100, 100, 100);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth - margin, pageHeight - 5, {
+      doc.setFontSize(10);
+      doc.text(`Page ${currentPage} of ${totalPages}`, pageWidth - margin, pageHeight - 25, {
         align: 'right'
       });
     };
 
-    const addFooter = () => {
-      const footerY = pageHeight - 15;
-
-      // Footer line
-      doc.setDrawColor(colors.border);
-      doc.setLineWidth(0.3);
-      doc.line(margin, footerY, pageWidth - margin, footerY);
-
-      // Generated info
-      doc.setTextColor(colors.secondary);
-      doc.setFontSize(9);
-      doc.text(`Generated by: ${takenByName}`, margin, footerY + 5);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth - margin, footerY + 5, { align: 'right' });
-    };
-
     // Calculate total pages needed
-    const rowsPerPage = 15; // Increased rows per page with compact design
+    const rowsPerPage = 12; // Adjust based on table size
     const totalPages = Math.ceil(sortedAttendees.length / rowsPerPage) || 1;
     let currentPage = 1;
 
-    // Course and section info - moved to top
-    doc.setFontSize(14);
-    doc.setTextColor(colors.primary);
-    doc.text(courseName, pageWidth / 2, 20, { align: 'center' });
+    // First page header
+    addWatermark();
 
+    // Title
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(`Attendance Report – ${courseName}`, pageWidth / 2, 25, { align: 'center' });
+
+    // Subtitle
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
-    doc.setTextColor(colors.secondary);
-    doc.text(`Section: ${sectionName}`, pageWidth / 2, 27, { align: 'center' });
-    doc.text(`Date: ${date}`, pageWidth / 2, 34, { align: 'center' });
+    doc.text(`Section: ${sectionName} | Date: ${date}`, pageWidth / 2, 35, { align: 'center' });
 
-    // Statistics with modern cards design
+    // Statistics
     const presentCount = record.attendees.filter(a => a.status === 'present').length;
     const absentCount = record.attendees.filter(a => a.status === 'absent').length;
+    const lateCount = record.attendees.filter(a => a.status === 'late').length;
+    const excusedCount = record.attendees.filter(a => a.status === 'excused').length;
     const totalStudents = record.attendees.length;
 
-    const statsY = 45;
-    const statWidth = (contentWidth - 10) / 3; // 3 stats with spacing
-
-    const drawStatCard = (x: number, y: number, width: number, title: string, value: number, color: string) => {
-      // Card background
-      doc.setFillColor(249, 250, 251);
-      doc.roundedRect(x, y, width, 20, 3, 3, 'F');
-
-      // Border
-      doc.setDrawColor(color);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(x, y, width, 20, 3, 3, 'S');
-
-      // Title
-      doc.setTextColor(colors.secondary);
-      doc.setFontSize(9);
-      doc.text(title, x + width / 2, y + 7, { align: 'center' });
-
-      // Value
-      doc.setTextColor(color);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text(value.toString(), x + width / 2, y + 15, { align: 'center' });
-    };
-
-    // Draw stat cards (only Total, Present, Absent)
-    drawStatCard(margin, statsY, statWidth, 'Total', totalStudents, colors.primary);
-    drawStatCard(margin + statWidth + 5, statsY, statWidth, 'Present', presentCount, colors.success);
-    drawStatCard(margin + (statWidth + 5) * 2, statsY, statWidth, 'Absent', absentCount, colors.danger);
+    doc.setFontSize(10);
+    const statsY = 50;
+    doc.text(`Total: ${totalStudents} | Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount} | Excused: ${excusedCount}`,
+      pageWidth / 2, statsY, { align: 'center' });
 
     // Table header
-    const tableStartY = statsY + 30;
+    const tableStartY = 65;
     let currentY = tableStartY;
 
     const drawTableHeader = (y: number) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
-      doc.setFillColor(colors.primary);
-      doc.roundedRect(margin, y, contentWidth, 8, 2, 2, 'F');
+      doc.setFillColor(37, 99, 235); // Blue background
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, 'F');
 
-      // Column headers (removed Note column)
-      doc.text('#', margin + 5, y + 5.5);
-      doc.text('Student ID', margin + 20, y + 5.5);
-      doc.text('Name', margin + 70, y + 5.5);
-      doc.text('Status', margin + 140, y + 5.5);
+      doc.text('Student ID', margin + 5, y + 7);
+      doc.text('Name', margin + 50, y + 7);
+      doc.text('Status', margin + 130, y + 7);
 
-      return y + 8;
+      return y + 10;
     };
 
     currentY = drawTableHeader(currentY);
 
     // Table rows
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(colors.dark);
+    doc.setTextColor(0, 0, 0);
     let rowIndex = 0;
 
     sortedAttendees.forEach((attendee, index) => {
       // Check if we need a new page
-      if (currentY > pageHeight - 40) {
-        // Add footer to current page
-        addFooter();
+      if (currentY > pageHeight - 60) {
+        // Add footer to current page (but not disclaimer - only on last page)
         addPageNumber(currentPage, totalPages);
 
         // Start new page
         doc.addPage();
         currentPage++;
-        currentY = margin + 20;
+        addWatermark();
+        currentY = margin;
         currentY = drawTableHeader(currentY);
       }
 
       // Alternating row colors
       if (index % 2 === 0) {
         doc.setFillColor(249, 250, 251); // Light gray
-        doc.rect(margin, currentY, contentWidth, 7, 'F');
+        doc.rect(margin, currentY, pageWidth - 2 * margin, 8, 'F');
       }
 
       // Student data
@@ -245,39 +209,35 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
       const status = attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1);
 
       doc.setFontSize(9);
+      doc.text(studentId, margin + 5, currentY + 6);
+      doc.text(studentName.substring(0, 35), margin + 50, currentY + 6); // Increased name length
 
-      // Row number
-      doc.setTextColor(colors.secondary);
-      doc.text((index + 1).toString(), margin + 5, currentY + 4.5);
-
-      // Student ID
-      doc.setTextColor(colors.dark);
-      doc.text(studentId, margin + 20, currentY + 4.5);
-
-      // Name
-      doc.text(studentName, margin + 70, currentY + 4.5);
-
-      // Status with color coding (only Present/Absent)
-      let displayStatus = 'Absent';
-      let statusColor = colors.danger;
-
-      if (attendee.status !== 'absent') {
-        displayStatus = 'Present';
-        statusColor = colors.success;
+      // Color-coded status
+      switch (attendee.status) {
+        case 'present':
+          doc.setTextColor(6, 95, 70); // Green
+          break;
+        case 'absent':
+          doc.setTextColor(153, 27, 27); // Red
+          break;
+        case 'late':
+          doc.setTextColor(146, 64, 14); // Orange
+          break;
+        case 'excused':
+          doc.setTextColor(55, 48, 163); // Purple
+          break;
+        default:
+          doc.setTextColor(0, 0, 0);
       }
 
-      doc.setTextColor(statusColor);
-      doc.text(displayStatus, margin + 140, currentY + 4.5);
+      doc.text(status, margin + 130, currentY + 6);
+      doc.setTextColor(0, 0, 0); // Reset color
 
-      currentY += 7;
-      rowIndex++;
+      currentY += 8;
     });
 
     // Add footer to last page
-    addFooter();
     addPageNumber(currentPage, totalPages);
-
-    // Only add disclaimer to the last page
     addDisclaimer();
 
     console.log('[PDF GENERATOR] jsPDF PDF generated successfully');

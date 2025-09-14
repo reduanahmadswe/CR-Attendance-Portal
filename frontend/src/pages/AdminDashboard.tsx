@@ -185,10 +185,13 @@ function AdminDashboard() {
               <Button
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium"
+                disabled={auth?.isLoggingOut}
+                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">
+                  {auth?.isLoggingOut ? 'Logging out...' : 'Logout'}
+                </span>
               </Button>
             </div>
           </div>
@@ -197,31 +200,14 @@ function AdminDashboard() {
 
       {/* Main Content with enhanced spacing and backdrop */}
       <main className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
-        <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
-          {/* Enhanced Welcome Message */}
-          <div className="text-center py-8 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-800/20 rounded-2xl backdrop-blur-sm"></div>
-            <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-indigo-800 dark:from-white dark:via-purple-200 dark:to-indigo-200 bg-clip-text text-transparent mb-4 animate-gradient leading-tight">
-                Administration Control Center
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
-                Manage sections, courses, students, and users with comprehensive
-                administrative tools
-                <span className="block mt-2 text-base text-gray-500 dark:text-gray-400">
-                  🛡️ Secure • Powerful • Comprehensive
-                </span>
-              </p>
-            </div>
-          </div>
-
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
           {/* Quick Stats */}
           <AdminStatsCards />
 
           {/* Modern Navigation Tabs */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-              <nav className="flex flex-wrap gap-2">
+              <nav className="flex flex-wrap gap-1 sm:gap-2">
                 {[
                   {
                     id: 'sections',
@@ -266,14 +252,16 @@ function AdminDashboard() {
                           | 'attendance'
                       )
                     }
-                    className={`flex items-center px-4 py-3 rounded-xl font-semibold transition-all duration-300 min-w-fit ${
+                    className={`flex items-center px-2 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 min-w-fit flex-1 sm:flex-none justify-center sm:justify-start ${
                       activeTab === tab.id
                         ? `bg-gradient-to-r ${tab.color} text-white shadow-lg hover:shadow-xl transform hover:scale-105`
                         : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white/80 dark:hover:bg-gray-700/50 shadow-sm hover:shadow-md'
                     }`}
                   >
-                    <tab.icon className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" />
+                    <span className="hidden sm:inline ml-1 sm:ml-0">
+                      {tab.label}
+                    </span>
                   </button>
                 ))}
               </nav>
@@ -348,24 +336,24 @@ const AdminStatsCards = () => {
   // Loading skeleton component
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[1, 2, 3, 4].map((index) => (
           <Card
             key={index}
-            className="overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
             style={{
               animationDelay: `${index * 150}ms`,
               animation: 'fadeInUp 0.8s ease-out forwards',
             }}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-xl animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
-                    <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
-                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
+                  <div className="space-y-1">
+                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
+                    <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
+                    <div className="h-2 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full"></div>
                   </div>
                 </div>
               </div>
@@ -377,28 +365,28 @@ const AdminStatsCards = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-8">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
       {stats.map((stat, index) => (
         <Card
           key={index}
-          className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500`}
+          className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`}
           style={{
             animationDelay: `${index * 150}ms`,
             animation: 'fadeInUp 0.8s ease-out forwards',
           }}
         >
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-3 sm:p-4 relative z-10">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div
-                  className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
+                  className={`inline-flex p-2 sm:p-2.5 rounded-lg bg-gradient-to-r ${stat.gradient} shadow-md mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 group-hover:shadow-lg`}
                 >
-                  <stat.icon className="h-6 w-6 text-white" />
+                  <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
+                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
                   {stat.title}
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2 group-hover:scale-105 transition-transform duration-300">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1 group-hover:scale-105 transition-transform duration-300">
                   {stat.value}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
@@ -407,7 +395,7 @@ const AdminStatsCards = () => {
               </div>
 
               {/* Decorative corner element */}
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           </CardContent>
         </Card>
@@ -509,14 +497,17 @@ const SectionsManagement = () => {
                   Add Section
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-purple-200 dark:border-purple-700">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-purple-200 dark:border-purple-700 max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="pb-4">
+                  <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
                     {editingSection ? 'Edit Section' : 'Add New Section'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="space-y-4">
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-4 sm:space-y-6"
+                >
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                         🏷️ Section Name
@@ -524,7 +515,7 @@ const SectionsManagement = () => {
                       <Input
                         {...register('name', { required: true })}
                         placeholder="e.g., CSE-3A"
-                        className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
+                        className="h-10 sm:h-12 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
                       />
                     </div>
                     <div className="space-y-2">
@@ -534,7 +525,7 @@ const SectionsManagement = () => {
                       <Input
                         {...register('code')}
                         placeholder="e.g., CSE3A"
-                        className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
+                        className="h-10 sm:h-12 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
                       />
                     </div>
                     <div className="space-y-2">
@@ -549,7 +540,7 @@ const SectionsManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-purple-100 dark:border-purple-800">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-purple-100 dark:border-purple-800">
                     <Button
                       type="button"
                       variant="outline"
@@ -558,13 +549,13 @@ const SectionsManagement = () => {
                         setEditingSection(null)
                         reset()
                       }}
-                      className="flex-1 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                      className="w-full sm:flex-1 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full sm:flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       {editingSection ? 'Update Section' : 'Create Section'}
                     </Button>
@@ -852,17 +843,17 @@ const CoursesManagement = () => {
                       Add Course
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-orange-200 dark:border-orange-700">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 dark:from-orange-400 dark:to-yellow-400 bg-clip-text text-transparent">
+                  <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-orange-200 dark:border-orange-700 max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="pb-4">
+                      <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 dark:from-orange-400 dark:to-yellow-400 bg-clip-text text-transparent">
                         {editingCourse ? 'Edit Course' : 'Add New Course'}
                       </DialogTitle>
                     </DialogHeader>
                     <form
                       onSubmit={handleSubmit(onSubmit)}
-                      className="space-y-6"
+                      className="space-y-4 sm:space-y-6"
                     >
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="space-y-2">
                           <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                             📖 Course Name
@@ -870,7 +861,7 @@ const CoursesManagement = () => {
                           <Input
                             {...register('name', { required: true })}
                             placeholder="e.g., Advanced Mathematics"
-                            className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
@@ -880,7 +871,7 @@ const CoursesManagement = () => {
                           <Input
                             {...register('code')}
                             placeholder="e.g., MATH301"
-                            className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
@@ -890,11 +881,11 @@ const CoursesManagement = () => {
                           <Input
                             {...register('semester')}
                             placeholder="e.g., Spring 2025"
-                            className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
                           />
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-orange-100 dark:border-orange-800">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-orange-100 dark:border-orange-800">
                         <Button
                           type="button"
                           variant="outline"
@@ -903,13 +894,13 @@ const CoursesManagement = () => {
                             setEditingCourse(null)
                             reset()
                           }}
-                          className="flex-1 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                          className="w-full sm:flex-1 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20"
                         >
                           Cancel
                         </Button>
                         <Button
                           type="submit"
-                          className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                          className="w-full sm:flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                         >
                           {editingCourse ? 'Update Course' : 'Create Course'}
                         </Button>
@@ -1265,9 +1256,9 @@ const StudentsManagement = () => {
                         <span className="font-semibold">Add Student</span>
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
-                      <DialogHeader className="pb-6">
-                        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
+                      <DialogHeader className="pb-4 sm:pb-6">
+                        <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                           {editingStudent
                             ? '✏️ Edit Student'
                             : '➕ Add New Student'}
@@ -1276,7 +1267,7 @@ const StudentsManagement = () => {
 
                       <form
                         onSubmit={handleSubmit(onSubmit)}
-                        className="space-y-6"
+                        className="space-y-4 sm:space-y-6"
                       >
                         {/* Student Basic Info */}
                         <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-6 border border-blue-200/40 dark:border-blue-700/40">
@@ -1291,7 +1282,7 @@ const StudentsManagement = () => {
                               </label>
                               <Input
                                 {...register('studentId', { required: true })}
-                                placeholder="e.g., 2025CSE001"
+                                placeholder="e.g., 232-35-016"
                                 className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
                               />
                             </div>
@@ -1322,20 +1313,20 @@ const StudentsManagement = () => {
                         </div>
 
                         {/* Course Selection */}
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-200/40 dark:border-green-700/40">
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                            <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 sm:p-6 border border-green-200/40 dark:border-green-700/40">
+                          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center mb-4">
+                            <h3 className="text-base sm:text-lg font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
                               📚 Course Selection
                             </h3>
 
                             {courses.length > 0 && (
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="sm"
                                   onClick={selectAllCourses}
-                                  className="text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
+                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
                                 >
                                   ✅ Select All
                                 </Button>
@@ -1344,7 +1335,7 @@ const StudentsManagement = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={clearAllCourses}
-                                  className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
                                 >
                                   ❌ Clear All
                                 </Button>
@@ -1352,13 +1343,13 @@ const StudentsManagement = () => {
                             )}
                           </div>
 
-                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 max-h-60 overflow-y-auto border border-green-200/60 dark:border-green-700/40">
+                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-2 sm:p-4 max-h-72 sm:max-h-80 overflow-y-auto border border-green-200/60 dark:border-green-700/40">
                             {courses.length > 0 ? (
-                              <div className="grid grid-cols-1 gap-3">
+                              <div className="grid grid-cols-1 gap-2 sm:gap-3">
                                 {courses.map((course) => (
                                   <div
                                     key={course._id}
-                                    className={`flex items-center p-3 rounded-lg border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${
+                                    className={`flex items-center p-2 sm:p-3 rounded-lg border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${
                                       selectedCourses.includes(course._id)
                                         ? 'border-green-400 bg-green-50 dark:border-green-500 dark:bg-green-900/30'
                                         : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-700/50 hover:border-green-300 dark:hover:border-green-600'
@@ -1372,23 +1363,23 @@ const StudentsManagement = () => {
                                         course._id
                                       )}
                                       onChange={() => toggleCourse(course._id)}
-                                      className="h-5 w-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700"
+                                      className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700"
                                     />
                                     <label
                                       htmlFor={course._id}
-                                      className="ml-3 flex-1 cursor-pointer"
+                                      className="ml-2 sm:ml-3 flex-1 cursor-pointer"
                                     >
-                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                        <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                      <div className="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:items-center sm:gap-2">
+                                        <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                                           {course.name}
                                         </span>
-                                        <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-full font-medium">
+                                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-full font-medium inline-block w-fit">
                                           {course.code}
                                         </span>
                                       </div>
                                     </label>
                                     {selectedCourses.includes(course._id) && (
-                                      <div className="ml-2 text-green-600 dark:text-green-400">
+                                      <div className="ml-1 sm:ml-2 text-green-600 dark:text-green-400 text-sm sm:text-base">
                                         ✅
                                       </div>
                                     )}
@@ -1396,14 +1387,14 @@ const StudentsManagement = () => {
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-center py-8">
-                                <div className="w-16 h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <div className="text-center py-6 sm:py-8">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                                   📚
                                 </div>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium">
+                                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
                                   No courses available for this section
                                 </p>
-                                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                                <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-1">
                                   Please add courses to this section first
                                 </p>
                               </div>
@@ -1411,13 +1402,13 @@ const StudentsManagement = () => {
                           </div>
 
                           {/* Course Selection Summary */}
-                          <div className="mt-4 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-green-200/60 dark:border-green-700/40">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-green-200/60 dark:border-green-700/40">
+                            <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Selected Courses:
                               </span>
                               <span
-                                className={`text-sm font-bold px-3 py-1 rounded-full ${
+                                className={`text-xs sm:text-sm font-bold px-2 sm:px-3 py-1 rounded-full text-center ${
                                   selectedCourses.length > 0
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
                                     : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
@@ -1428,7 +1419,7 @@ const StudentsManagement = () => {
                             </div>
                             {selectedCourses.length === 0 &&
                               courses.length > 0 && (
-                                <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+                                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
                                   ⚠️ Please select at least one course
                                 </p>
                               )}
@@ -1436,7 +1427,7 @@ const StudentsManagement = () => {
                         </div>
 
                         {/* Form Actions */}
-                        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200/60 dark:border-gray-700/40">
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200/60 dark:border-gray-700/40">
                           <Button
                             type="button"
                             variant="outline"
@@ -1446,7 +1437,7 @@ const StudentsManagement = () => {
                               setSelectedCourses([])
                               reset()
                             }}
-                            className="order-2 sm:order-1 h-12 px-6 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50"
+                            className="order-2 sm:order-1 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50"
                           >
                             Cancel
                           </Button>
@@ -1455,7 +1446,7 @@ const StudentsManagement = () => {
                             disabled={
                               selectedCourses.length === 0 && courses.length > 0
                             }
-                            className="order-1 sm:order-2 h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                            className="order-1 sm:order-2 h-10 sm:h-12 px-6 sm:px-8 text-sm sm:text-base bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                           >
                             {editingStudent
                               ? '💾 Update Student'
@@ -1858,16 +1849,19 @@ const UsersManagement = () => {
                   <span className="font-semibold">Add New User</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
-                <DialogHeader className="pb-6">
-                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
+                <DialogHeader className="pb-4 sm:pb-6">
+                  <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     {editingUser ? '✏️ Edit User' : '➕ Add New User'}
                   </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-4 sm:space-y-6"
+                >
                   {/* User Basic Info */}
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-6 border border-blue-200/40 dark:border-blue-700/40">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4 sm:p-6 border border-blue-200/40 dark:border-blue-700/40">
                     <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center gap-2">
                       👤 User Information
                     </h3>
