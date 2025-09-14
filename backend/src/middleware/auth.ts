@@ -39,11 +39,17 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
 
         // Add user info to request
         req.user = {
-            userId: user._id,
+            userId: user._id.toString(),
             email: user.email,
             role: user.role,
             ...(user.sectionId && { sectionId: user.sectionId.toString() }),
         };
+
+        console.log('Auth middleware - User set:', {
+            userId: req.user.userId,
+            email: req.user.email,
+            role: req.user.role
+        });
 
         next();
     } catch (error) {

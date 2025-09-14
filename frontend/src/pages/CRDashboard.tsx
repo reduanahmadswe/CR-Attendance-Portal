@@ -266,6 +266,7 @@ export function CRDashboard() {
 
   // Edit Attendance Functions
   const handleEditRecord = (record: AttendanceRecord) => {
+    console.log('Opening edit modal for record:', record)
     setEditingRecord(record)
     const initialStatus: { [studentId: string]: 'present' | 'absent' } = {}
     record.attendees.forEach((attendee) => {
@@ -275,6 +276,7 @@ export function CRDashboard() {
           : attendee.studentId._id
       initialStatus[studentId] = attendee.status as 'present' | 'absent'
     })
+    console.log('Initial status for editing:', initialStatus)
     setEditingStudents(initialStatus)
     setIsEditModalOpen(true)
   }
@@ -290,13 +292,21 @@ export function CRDashboard() {
         })
       )
 
-      await updateAttendanceRecord({
+      console.log('Updating attendance with data:', {
+        id: editingRecord._id,
+        data: { attendees: updatedAttendees },
+        originalRecord: editingRecord,
+        editingStudents: editingStudents,
+      })
+
+      const result = await updateAttendanceRecord({
         id: editingRecord._id,
         data: {
           attendees: updatedAttendees,
         },
       }).unwrap()
 
+      console.log('Update result:', result)
       toast.success('Attendance updated successfully!')
       setIsEditModalOpen(false)
       setEditingRecord(null)
@@ -311,10 +321,15 @@ export function CRDashboard() {
     studentId: string,
     status: 'present' | 'absent'
   ) => {
-    setEditingStudents((prev) => ({
-      ...prev,
-      [studentId]: status,
-    }))
+    console.log('Changing status for student:', studentId, 'to:', status)
+    setEditingStudents((prev) => {
+      const updated = {
+        ...prev,
+        [studentId]: status,
+      }
+      console.log('Updated editing students:', updated)
+      return updated
+    })
   }
 
   return (

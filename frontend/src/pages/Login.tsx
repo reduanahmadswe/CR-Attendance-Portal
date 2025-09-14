@@ -124,9 +124,9 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-2 sm:p-4 md:p-6 lg:p-8 pb-32 sm:pb-36 md:pb-40">
       {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-6 md:right-6 z-10">
         <ThemeToggle />
       </div>
 
@@ -152,8 +152,8 @@ export function Login() {
 // Background decorations component
 const BackgroundDecorations = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
-    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000" />
+    <div className="absolute -top-20 -right-20 sm:-top-40 sm:-right-40 w-40 h-40 sm:w-80 sm:h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
+    <div className="absolute -bottom-20 -left-20 sm:-bottom-40 sm:-left-40 w-40 h-40 sm:w-80 sm:h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000" />
   </div>
 )
 
@@ -175,25 +175,25 @@ const LoginCard = ({
   handleSubmit,
   isLoading,
 }: LoginCardProps) => (
-  <Card className="w-full max-w-sm sm:max-w-md lg:max-w-lg shadow-2xl border-0 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-    <CardHeader className="space-y-2 pb-6">
+  <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-2 sm:mx-4 shadow-2xl border-0 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
+    <CardHeader className="space-y-2 pb-4 sm:pb-6 px-4 sm:px-6">
       {/* Logo */}
-      <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+      <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-2 sm:mb-4">
         <CheckIcon />
       </div>
 
       {/* Title */}
-      <CardTitle className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+      <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
         CR Attendance Portal
       </CardTitle>
 
       {/* Description */}
-      <CardDescription className="text-center text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+      <CardDescription className="text-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm md:text-base px-2">
         Sign in to manage your class attendance records
       </CardDescription>
     </CardHeader>
 
-    <CardContent className="space-y-6">
+    <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-4 sm:pb-6">
       <LoginForm
         email={email}
         password={password}
@@ -215,17 +215,17 @@ const LoginForm = ({
   handleSubmit,
   isLoading,
 }: LoginCardProps) => (
-  <form onSubmit={handleSubmit} className="space-y-5">
+  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
     {/* Email Field */}
-    <div className="space-y-2">
+    <div className="space-y-1 sm:space-y-2">
       <label
         htmlFor="email"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
       >
         Email Address
       </label>
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
           <EmailIcon />
         </div>
         <input
@@ -233,7 +233,7 @@ const LoginForm = ({
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
           placeholder="Enter your email address"
           required
         />
@@ -241,15 +241,15 @@ const LoginForm = ({
     </div>
 
     {/* Password Field */}
-    <div className="space-y-2">
+    <div className="space-y-1 sm:space-y-2">
       <label
         htmlFor="password"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
       >
         Password
       </label>
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
           <LockIcon />
         </div>
         <input
@@ -257,7 +257,7 @@ const LoginForm = ({
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
           placeholder="Enter your password"
           required
         />
@@ -267,16 +267,16 @@ const LoginForm = ({
     {/* Submit Button */}
     <Button
       type="submit"
-      className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+      className="w-full h-10 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-xs sm:text-sm md:text-base"
       disabled={isLoading}
     >
       {isLoading ? (
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           <span>Signing in...</span>
         </div>
       ) : (
-        <div className="flex items-center justify-center space-x-2">
+        <div className="flex items-center justify-center space-x-1 sm:space-x-2">
           <span>Sign In</span>
           <ArrowRightIcon />
         </div>
@@ -287,27 +287,24 @@ const LoginForm = ({
 
 // Footer credit component
 const FooterCredit = () => (
-  <div className="absolute bottom-4 left-0 right-0 px-4 sm:px-6">
-    <div className="max-w-2xl mx-auto">
+  <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 px-3 sm:px-4 md:px-6">
+    <div className="max-w-xs sm:max-w-md md:max-w-2xl mx-auto">
       <Card className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-        <CardContent className="p-4 text-center">
-          <div className="space-y-2">
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
-              📚 Built to digitize attendance management for Class
-              Representatives
+        <CardContent className="p-2 sm:p-3 md:p-4 text-center">
+          <div className="space-y-1 sm:space-y-2">
+            <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium leading-tight">
+              📚 Built for Class Representatives attendance management
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-              This portal was created to help Class Representatives easily
-              manage and track student attendance, replacing traditional
-              paper-based systems with a modern, efficient digital solution.
+            <p className="text-[9px] sm:text-xs text-gray-600 dark:text-gray-400 leading-relaxed hidden sm:block">
+              This portal helps Class Representatives easily manage and track student attendance, replacing traditional paper-based systems.
             </p>
-            <div className="pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
-              <p className="text-xs text-gray-500 dark:text-gray-500">
+            <div className="pt-1 sm:pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+              <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-500 leading-tight">
                 Created with ❤️ by{' '}
                 <span className="font-semibold text-blue-600 dark:text-blue-400">
                   Reduan Ahmad
-                </span>{' '}
-                • Software Engineering student
+                </span>
+                <span className="hidden sm:inline"> • Software Engineering student</span>
               </p>
             </div>
           </div>

@@ -152,15 +152,36 @@ export const updateAttendanceRecord = asyncHandler(async (req: Request, res: Res
     const { attendees } = req.body;
     const updatedBy = req.user?.userId;
 
+    console.log('Update request data:', {
+        recordId: id,
+        userId: updatedBy,
+        userRole: req.user?.role,
+        attendeesCount: attendees?.length
+    });
+
     const record = await AttendanceRecord.findById(id);
 
     if (!record) {
         throw new AppError('Attendance record not found', 404);
     }
 
-    // Only allow admin or the person who took attendance to update
-    if (req.user?.role !== 'admin' && record.takenBy.toString() !== updatedBy) {
-        throw new AppError('You can only update attendance records you created', 403);
+    console.log('Permission check:', {
+        userRole: req.user?.role,
+        recordTakenBy: record.takenBy.toString(),
+        updatedBy: updatedBy?.toString(),
+        isAdmin: req.user?.role === 'admin',
+        isOwner: record.takenBy.toString() === updatedBy?.toString(),
+        userSectionId: req.user?.sectionId,
+        recordSectionId: record.sectionId.toString()
+    });
+
+    // Permission check: Allow admin, the person who took attendance, or CR of the same section
+    const isAdmin = req.user?.role === 'admin';
+    const isOwner = record.takenBy.toString() === updatedBy?.toString();
+    const isCROfSameSection = req.user?.role === 'cr' && req.user?.sectionId === record.sectionId.toString();
+
+    if (!isAdmin && !isOwner && !isCROfSameSection) {
+        throw new AppError('You can only update attendance records for your section', 403);
     }
 
     // Verify all students in the attendees belong to the section and course
@@ -357,7 +378,7 @@ export const generateAttendancePDFEndpoint = asyncHandler(async (req: Request, r
 
         const sanitizedSectionName = sectionName.replace(/[^a-zA-Z0-9-]/g, '-');
         const sanitizedCourseCode = courseCode.replace(/[^a-zA-Z0-9-]/g, '-');
-        const filename = `${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
+        const filename = `Download_Attendance_Reports_${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
 
         console.log('[PDF DOWNLOAD] Sending PDF with filename:', filename);
 
@@ -449,8 +470,8 @@ export const streamAttendancePDF = asyncHandler(async (req: Request, res: Respon
         const sanitizedSectionName = sectionName.replace(/[^a-zA-Z0-9-]/g, '-');
         const sanitizedCourseCode = courseCode.replace(/[^a-zA-Z0-9-]/g, '-');
 
-        // Format: SectionName_CourseCode_Date.pdf
-        const filename = `${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
+        // Format: Download_Attendance_Reports_SectionName_CourseCode_Date.pdf
+        const filename = `Download_Attendance_Reports_${sanitizedSectionName}_${sanitizedCourseCode}_${date}.pdf`;
 
         console.log('Stream - Generated filename:', filename);
 

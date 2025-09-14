@@ -1,3 +1,4 @@
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
     ApiResponse,
@@ -37,9 +38,48 @@ const baseQuery = fetchBaseQuery({
     },
 });
 
+// Enhanced base query with error handling
+const baseQueryWithErrorHandling: BaseQueryFn<
+    string | FetchArgs,
+    unknown,
+    FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+    try {
+        const result = await baseQuery(args, api, extraOptions);
+
+        // Handle successful responses
+        if (result.data) {
+            return result;
+        }
+
+        // Handle errors
+        if (result.error) {
+            console.error('API Error:', result.error);
+
+            // Handle 401 errors - token expired
+            if (result.error.status === 401) {
+                // Clear auth state for token expiry
+                api.dispatch({ type: 'auth/clearCredentials' });
+            }
+
+            return result;
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Network Error:', error);
+        return {
+            error: {
+                status: 'FETCH_ERROR',
+                error: 'Network error occurred',
+            },
+        };
+    }
+};
+
 export const apiSlice = createApi({
     reducerPath: 'api',
-    baseQuery,
+    baseQuery: baseQueryWithErrorHandling,
     tagTypes: ['User', 'Section', 'Course', 'Student', 'AttendanceRecord'],
     keepUnusedDataFor: 60, // Keep data for 60 seconds
     refetchOnMountOrArgChange: 30, // Only refetch if data is older than 30 seconds

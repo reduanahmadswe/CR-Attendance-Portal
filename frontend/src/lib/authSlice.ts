@@ -6,35 +6,57 @@ export interface AuthState {
     user: User | null;
     accessToken: string | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
 }
 
-const initialState: AuthState = {
-    user: null,
-    accessToken: localStorage.getItem('accessToken'),
-    isAuthenticated: false,
+// Check if there's a token in localStorage on app load
+const getInitialAuthState = (): AuthState => {
+    const token = localStorage.getItem('accessToken');
+    return {
+        user: null,
+        accessToken: token,
+        isAuthenticated: Boolean(token),
+        isLoading: Boolean(token), // If there's a token, we'll need to verify it
+    };
 };
+
+const initialState: AuthState = getInitialAuthState();
 
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
         setCredentials: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
+            console.log('[AUTH SLICE] Setting credentials for user:', action.payload.user.email);
             state.user = action.payload.user;
             state.accessToken = action.payload.accessToken;
             state.isAuthenticated = true;
+            state.isLoading = false;
             localStorage.setItem('accessToken', action.payload.accessToken);
         },
         clearCredentials: (state) => {
+            console.log('[AUTH SLICE] Clearing credentials');
             state.user = null;
             state.accessToken = null;
             state.isAuthenticated = false;
+            state.isLoading = false;
             localStorage.removeItem('accessToken');
         },
         updateUser: (state, action: PayloadAction<User>) => {
+            console.log('[AUTH SLICE] Updating user data:', action.payload.email);
             state.user = action.payload;
+        },
+        setLoading: (state, action: PayloadAction<boolean>) => {
+            state.isLoading = action.payload;
+        },
+        initializeAuth: (state, action: PayloadAction<User>) => {
+            console.log('[AUTH SLICE] Initializing auth with user:', action.payload.email);
+            state.user = action.payload;
+            state.isAuthenticated = true;
+            state.isLoading = false;
         },
     },
 });
 
-export const { setCredentials, clearCredentials, updateUser } = authSlice.actions;
+export const { setCredentials, clearCredentials, updateUser, setLoading, initializeAuth } = authSlice.actions;
 export default authSlice.reducer;

@@ -4,8 +4,8 @@ import {
   useLoginMutation,
   useLogoutMutation,
 } from '@/lib/apiSlice'
+import { clearCredentials, setCredentials } from '@/lib/authSlice'
 import type { RootState } from '@/lib/simpleStore'
-import { clearCredentials, setCredentials } from '@/lib/simpleStore'
 import type { User } from '@/types'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect } from 'react'
@@ -23,7 +23,7 @@ export const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const dispatch = useDispatch()
-  const { user, accessToken, isAuthenticated } = useSelector(
+  const { user, accessToken, isAuthenticated, isLoading } = useSelector(
     (state: RootState) => state.auth
   )
 
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isLoading: profileLoading,
+    isLoading: profileLoading || (isLoading && Boolean(accessToken)),
     isAuthenticated,
     login,
     logout,
