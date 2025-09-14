@@ -27,22 +27,6 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 // Icons as components for better organization
-const CheckIcon = () => (
-  <svg
-    className="w-8 h-8 text-white"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-)
-
 const EmailIcon = () => (
   <svg
     className="h-5 w-5 text-gray-400"
@@ -178,13 +162,17 @@ const LoginCard = ({
   <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-2 sm:mx-4 shadow-2xl border-0 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
     <CardHeader className="space-y-2 pb-4 sm:pb-6 px-4 sm:px-6">
       {/* Logo */}
-      <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-2 sm:mb-4">
-        <CheckIcon />
+      <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 mb-2 sm:mb-4 relative">
+        <img
+          src="/logo.svg"
+          alt="CR Attendance Portal Logo"
+          className="w-full h-full object-contain drop-shadow-lg"
+        />
       </div>
 
       {/* Title */}
       <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-        CR Attendance Portal
+        CR Portal
       </CardTitle>
 
       {/* Description */}
@@ -296,7 +284,8 @@ const FooterCredit = () => (
               📚 Built for Class Representatives attendance management
             </p>
             <p className="text-[9px] sm:text-xs text-gray-600 dark:text-gray-400 leading-relaxed hidden sm:block">
-              This portal helps Class Representatives easily manage and track student attendance, replacing traditional paper-based systems.
+              This portal helps Class Representatives easily manage and track
+              student attendance, replacing traditional paper-based systems.
             </p>
             <div className="pt-1 sm:pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
               <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-500 leading-tight">
@@ -304,7 +293,10 @@ const FooterCredit = () => (
                 <span className="font-semibold text-blue-600 dark:text-blue-400">
                   Reduan Ahmad
                 </span>
-                <span className="hidden sm:inline"> • Software Engineering student</span>
+                <span className="hidden sm:inline">
+                  {' '}
+                  • Software Engineering student
+                </span>
               </p>
             </div>
           </div>

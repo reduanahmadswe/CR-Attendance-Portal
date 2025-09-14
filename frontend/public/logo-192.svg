@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="logo-bg-192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A855F7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkmark-gradient-192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle with Shadow -->
+  <circle cx="96" cy="96" r="88" fill="url(#logo-bg-192)" filter="url(#shadow)"/>
+  <circle cx="96" cy="96" r="88" fill="none" stroke="#FFFFFF" stroke-width="8" opacity="0.3"/>
+  
+  <!-- Book/Document Base -->
+  <rect x="48" y="60" width="96" height="72" rx="12" ry="12" fill="#FFFFFF" opacity="0.95"/>
+  <rect x="48" y="60" width="96" height="72" rx="12" ry="12" fill="none" stroke="#E5E7EB" stroke-width="2"/>
+  
+  <!-- Document Header -->
+  <rect x="56" y="68" width="80" height="8" rx="4" fill="#3B82F6" opacity="0.8"/>
+  
+  <!-- Document Lines -->
+  <line x1="60" y1="88" x2="132" y2="88" stroke="#6B7280" stroke-width="3" opacity="0.6"/>
+  <line x1="60" y1="100" x2="120" y2="100" stroke="#6B7280" stroke-width="3" opacity="0.6"/>
+  <line x1="60" y1="112" x2="108" y2="112" stroke="#6B7280" stroke-width="3" opacity="0.6"/>
+  <line x1="60" y1="124" x2="96" y2="124" stroke="#6B7280" stroke-width="3" opacity="0.4"/>
+  
+  <!-- Large Checkmark -->
+  <path d="M72 110 L84 122 L120 86" stroke="url(#checkmark-gradient-192)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Attendance indicator dots -->
+  <circle cx="152" cy="48" r="12" fill="#F59E0B">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="168" cy="72" r="8" fill="#EF4444">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="36" cy="144" r="10" fill="#10B981">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- CR Badge -->
+  <rect x="120" y="40" width="32" height="16" rx="8" fill="#F59E0B"/>
+  <text x="136" y="51" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">CR</text>
+</svg>
