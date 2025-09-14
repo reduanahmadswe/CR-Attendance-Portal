@@ -32,6 +32,7 @@ import {
   useGetCourseStudentsQuery,
   useGetSectionCoursesQuery,
   useGetSectionStudentsQuery,
+  useUpdateAttendanceRecordMutation,
 } from '@/lib/apiSlice'
 import type { RootState } from '@/lib/simpleStore'
 import type { AttendanceRecord, Student } from '@/types'
@@ -41,6 +42,7 @@ import {
   CheckCircle,
   Clock,
   Download,
+  Edit,
   ExternalLink,
   FileText,
   History,
@@ -67,6 +69,35 @@ export function CRDashboard() {
   const { isLoading, user: authUser } = auth
   const navigate = useNavigate()
 
+  // Edit Attendance Modal States - moved to top to avoid conditional hook calls
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(
+    null
+  )
+  const [editingStudents, setEditingStudents] = useState<{
+    [studentId: string]: 'present' | 'absent'
+  }>({})
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [updateAttendanceRecord] = useUpdateAttendanceRecordMutation()
+
+  // Navigation state for different sections
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'reports'>(
+    'dashboard'
+  )
+
+  // Fetch section students for proper name/ID display in edit modal
+  // Note: This uses user or authUser sectionId, might be undefined initially
+  const tempSectionId = user?.sectionId || authUser?.sectionId
+  const { data: sectionStudentsResponse } = useGetSectionStudentsQuery(
+    {
+      sectionId:
+        typeof tempSectionId === 'string'
+          ? tempSectionId
+          : tempSectionId?._id || '',
+    },
+    { skip: !tempSectionId }
+  )
+  const sectionStudents = sectionStudentsResponse?.data?.data || []
+
   console.log('[CR DASHBOARD] Component rendered')
   console.log('[CR DASHBOARD] Redux user:', user)
   console.log('[CR DASHBOARD] Auth user:', authUser)
@@ -89,6 +120,34 @@ export function CRDashboard() {
 
   // Use authUser from context if available, fallback to Redux user
   const currentUser = authUser || user
+
+  // Helper function to get student info by ID
+  const getStudentInfo = (studentId: string) => {
+    const student = sectionStudents.find((s) => s._id === studentId)
+
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[STUDENT INFO] Looking for studentId:', studentId)
+      console.log('[STUDENT INFO] Available students:', sectionStudents.length)
+      console.log('[STUDENT INFO] Found student:', student)
+    }
+
+    if (student) {
+      return {
+        name: student.name || 'Unknown Student',
+        studentId: student.studentId || 'N/A',
+        id: studentId,
+      }
+    }
+
+    // Fallback: if we can't find the student in section students,
+    // try to get info from the attendance record itself
+    return {
+      name: 'Loading...',
+      studentId: studentId.slice(-8), // Show last 8 chars of ObjectId as fallback
+      id: studentId,
+    }
+  }
 
   console.log('[CR DASHBOARD] Current user:', currentUser)
   console.log('[CR DASHBOARD] Current user role:', currentUser?.role)
@@ -117,17 +176,17 @@ export function CRDashboard() {
         console.log(
           '[CR DASHBOARD] auth.logout not available, fallback redirect'
         )
-        window.location.href = '/login'
+        window.location.href = '/auth/login'
       }
     } catch (error) {
       console.error('[CR DASHBOARD] Logout failed:', error)
       // Still navigate to login even if logout fails
-      window.location.href = '/login'
+      window.location.href = '/auth/login'
     }
   }
 
   const handleNavigateToHistory = () => {
-    navigate('/attendance-history')
+    navigate('/reports/attendance-history')
   }
 
   if (!currentUser) {
@@ -136,7 +195,7 @@ export function CRDashboard() {
 
     if (!token) {
       console.log('[CR DASHBOARD] No token, redirecting to login')
-      navigate('/login')
+      navigate('/auth/login')
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
@@ -174,7 +233,7 @@ export function CRDashboard() {
           <p className="text-gray-600 dark:text-gray-400">
             You don't have permission to access this page.
           </p>
-          <Button onClick={() => navigate('/login')} className="mt-4">
+          <Button onClick={() => navigate('/auth/login')} className="mt-4">
             Go to Login
           </Button>
         </div>
@@ -192,7 +251,7 @@ export function CRDashboard() {
           <p className="text-gray-600 dark:text-gray-400">
             Please contact admin to assign you to a section.
           </p>
-          <Button onClick={() => navigate('/login')} className="mt-4">
+          <Button onClick={() => navigate('/auth/login')} className="mt-4">
             Go to Login
           </Button>
         </div>
@@ -204,6 +263,59 @@ export function CRDashboard() {
     typeof currentUser.sectionId === 'string'
       ? currentUser.sectionId
       : currentUser.sectionId._id
+
+  // Edit Attendance Functions
+  const handleEditRecord = (record: AttendanceRecord) => {
+    setEditingRecord(record)
+    const initialStatus: { [studentId: string]: 'present' | 'absent' } = {}
+    record.attendees.forEach((attendee) => {
+      const studentId =
+        typeof attendee.studentId === 'string'
+          ? attendee.studentId
+          : attendee.studentId._id
+      initialStatus[studentId] = attendee.status as 'present' | 'absent'
+    })
+    setEditingStudents(initialStatus)
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingRecord) return
+
+    try {
+      const updatedAttendees = Object.entries(editingStudents).map(
+        ([studentId, status]) => ({
+          studentId,
+          status,
+        })
+      )
+
+      await updateAttendanceRecord({
+        id: editingRecord._id,
+        data: {
+          attendees: updatedAttendees,
+        },
+      }).unwrap()
+
+      toast.success('Attendance updated successfully!')
+      setIsEditModalOpen(false)
+      setEditingRecord(null)
+      setEditingStudents({})
+    } catch (error) {
+      console.error('Error updating attendance:', error)
+      toast.error('Failed to update attendance. Please try again.')
+    }
+  }
+
+  const handleStatusChange = (
+    studentId: string,
+    status: 'present' | 'absent'
+  ) => {
+    setEditingStudents((prev) => ({
+      ...prev,
+      [studentId]: status,
+    }))
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
@@ -227,13 +339,20 @@ export function CRDashboard() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient">
-                  CR Dashboard
+                  {activeSection === 'dashboard'
+                    ? 'CR Dashboard'
+                    : 'Attendance Reports'}
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                   Welcome back,{' '}
                   <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     {currentUser.name}
                   </span>
+                  {activeSection === 'reports' && (
+                    <span className="ml-2 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded-full">
+                      Reports View
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -248,6 +367,25 @@ export function CRDashboard() {
               >
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline font-medium">History</span>
+              </Button>
+              <Button
+                variant={activeSection === 'reports' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() =>
+                  setActiveSection(
+                    activeSection === 'reports' ? 'dashboard' : 'reports'
+                  )
+                }
+                className={`flex items-center gap-2 h-10 px-4 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm ${
+                  activeSection === 'reports'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-105'
+                    : 'border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 hover:border-amber-300 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 dark:hover:border-amber-600'
+                }`}
+              >
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">
+                  {activeSection === 'reports' ? 'Dashboard' : 'Reports'}
+                </span>
               </Button>
               <div className="p-1 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
                 <ThemeToggle />
@@ -290,11 +428,14 @@ export function CRDashboard() {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-gray-800/20 rounded-2xl backdrop-blur-sm"></div>
             <div className="relative z-10">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-4 animate-gradient leading-tight">
-                Attendance Management Hub
+                {activeSection === 'dashboard'
+                  ? 'Attendance Management Hub'
+                  : 'Attendance Reports'}
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
-                Take attendance, track student participation, and generate
-                comprehensive reports
+                {activeSection === 'dashboard'
+                  ? 'Take attendance, track student participation, and generate comprehensive reports'
+                  : 'View, edit, and download attendance reports for your section'}
                 <span className="block mt-2 text-base text-gray-500 dark:text-gray-400">
                   ✨ Modern • Efficient • Powerful
                 </span>
@@ -302,24 +443,174 @@ export function CRDashboard() {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <CRStatsCards sectionId={sectionId} />
+          {/* Conditional Content Based on Active Section */}
+          <div className="transition-all duration-500 ease-in-out">
+            {activeSection === 'dashboard' ? (
+              <div className="space-y-8 sm:space-y-12 animate-in fade-in-0 slide-in-from-left-4 duration-500">
+                {/* Quick Stats */}
+                <CRStatsCards sectionId={sectionId} />
 
-          {/* Take Attendance Section */}
-          <TakeAttendanceSection sectionId={sectionId} />
+                {/* Take Attendance Section */}
+                <TakeAttendanceSection sectionId={sectionId} />
 
-          {/* Manage Attendance Reports Section */}
-          <EditAttendanceSection sectionId={sectionId} />
+                {/* Recent Attendance Records */}
+                <ErrorBoundary>
+                  <RecentAttendanceSection sectionId={sectionId} />
+                </ErrorBoundary>
+              </div>
+            ) : (
+              <div className="space-y-8 sm:space-y-12 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+                {/* Manage Attendance Reports Section */}
+                <EditAttendanceSection
+                  sectionId={sectionId}
+                  onEditRecord={handleEditRecord}
+                />
 
-          {/* Download Reports Section */}
-          <DownloadReportsSection sectionId={sectionId} />
-
-          {/* Recent Attendance Records */}
-          <ErrorBoundary>
-            <RecentAttendanceSection sectionId={sectionId} />
-          </ErrorBoundary>
+                {/* Download Reports Section */}
+                <DownloadReportsSection sectionId={sectionId} />
+              </div>
+            )}
+          </div>
         </div>
       </main>
+
+      {/* Edit Attendance Modal */}
+      {isEditModalOpen && (
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Edit Attendance -{' '}
+                {editingRecord &&
+                  new Date(editingRecord.date).toLocaleDateString()}
+              </DialogTitle>
+            </DialogHeader>
+
+            {editingRecord && (
+              <div className="space-y-4">
+                {sectionStudents.length === 0 && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Loading student information...
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                    Course:{' '}
+                    {typeof editingRecord.courseId === 'string'
+                      ? editingRecord.courseId
+                      : `${editingRecord.courseId.name} (${editingRecord.courseId.code})`}
+                  </h3>
+                  <p className="text-sm text-blue-600 dark:text-blue-300">
+                    Date: {new Date(editingRecord.date).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Student Attendance ({editingRecord.attendees.length}{' '}
+                    students)
+                  </h4>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {editingRecord.attendees.map((attendee) => {
+                      const studentId =
+                        typeof attendee.studentId === 'string'
+                          ? attendee.studentId
+                          : attendee.studentId._id
+
+                      // Get proper student info using helper function
+                      const studentInfo = getStudentInfo(studentId)
+
+                      return (
+                        <div
+                          key={studentId}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-medium">
+                                {studentInfo.name.charAt(0) || 'S'}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {studentInfo.name}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                ID: {studentInfo.studentId}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant={
+                                editingStudents[studentId] === 'present'
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              onClick={() =>
+                                handleStatusChange(studentId, 'present')
+                              }
+                              className={`${
+                                editingStudents[studentId] === 'present'
+                                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                                  : 'border-green-300 text-green-700 hover:bg-green-50'
+                              }`}
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Present
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={
+                                editingStudents[studentId] === 'absent'
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              onClick={() =>
+                                handleStatusChange(studentId, 'absent')
+                              }
+                              className={`${
+                                editingStudents[studentId] === 'absent'
+                                  ? 'bg-red-500 hover:bg-red-600 text-white'
+                                  : 'border-red-300 text-red-700 hover:bg-red-50'
+                              }`}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Absent
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveEdit}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
@@ -884,8 +1175,14 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
 }
 
 // Manage Attendance Reports Section Component
-const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+const EditAttendanceSection = ({
+  sectionId,
+  onEditRecord,
+}: {
+  sectionId: string
+  onEditRecord: (record: AttendanceRecord) => void
+}) => {
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('all')
 
   // Get courses for display
   const { data: coursesResponse } = useGetSectionCoursesQuery(
@@ -897,51 +1194,45 @@ const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
   // Get attendance records for this section and selected course
   const { data: attendanceResponse, isLoading } = useGetAttendanceRecordsQuery({
     sectionId,
-    courseId: selectedCourseId || undefined,
+    courseId:
+      selectedCourseId === 'all' ? undefined : selectedCourseId || undefined,
     limit: 50,
   })
   const attendanceRecords = attendanceResponse?.data?.data || []
 
   const handleEditRecord = (record: AttendanceRecord) => {
-    // For now, show a simple alert about editing functionality
-    toast.info(
-      `Edit functionality for record ${new Date(record.date).toLocaleDateString()} will be available soon!`
-    )
+    onEditRecord(record)
   }
 
   const handleDownloadPDF = async (record: AttendanceRecord) => {
     try {
-      const response = await fetch(`/api/attendance/${record._id}/pdf`, {
+      const apiUrl =
+        import.meta.env.VITE_API_URL || 'https://crportal-nu.vercel.app/api'
+      const response = await fetch(`${apiUrl}/attendance/${record._id}/pdf`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
       })
 
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-
-        const courseName = getCourseName(record.courseId)
-        const date = new Date(record.date)
-          .toLocaleDateString()
-          .replace(/\//g, '-')
-        link.download = `attendance-${courseName}-${date}.pdf`
-
-        document.body.appendChild(link)
-        link.click()
-
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(link)
-
-        toast.success('PDF downloaded successfully!')
-      } else {
+      if (!response.ok) {
         throw new Error('Failed to download PDF')
       }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `attendance-${new Date(record.date).toLocaleDateString()}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast.success('PDF downloaded successfully!')
     } catch (error) {
-      console.error('[DOWNLOAD PDF] Error downloading PDF:', error)
+      console.error('Error downloading PDF:', error)
       toast.error('Failed to download PDF. Please try again.')
     }
   }
@@ -965,18 +1256,18 @@ const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Manage Attendance Reports</h3>
-              <p className="text-orange-100 text-sm">
-                Select course and download specific session reports or edit
-                attendance
+              <h2 className="text-xl sm:text-2xl font-bold">
+                Manage Attendance Reports
+              </h2>
+              <p className="text-amber-100 text-sm">
+                View and edit existing attendance records
               </p>
             </div>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
-        {/* Course Selection */}
-        <div className="mb-6 space-y-3">
+      <CardContent className="p-6 sm:p-8">
+        <div className="space-y-6">
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
             Select Course
           </h4>
@@ -985,7 +1276,7 @@ const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
               <SelectValue placeholder="Choose a course to view attendance records" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Courses</SelectItem>
+              <SelectItem value="all">All Courses</SelectItem>
               {courses.map((course) => (
                 <SelectItem key={course._id} value={course._id}>
                   {course.name} ({course.code})
@@ -1001,18 +1292,7 @@ const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
               Loading attendance records...
             </p>
           </div>
-        ) : !selectedCourseId ? (
-          <div className="text-center py-8">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Select a Course
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              Choose a course from the dropdown above to view and manage
-              attendance records.
-            </p>
-          </div>
-        ) : attendanceRecords.length === 0 ? (
+        ) : selectedCourseId !== 'all' && attendanceRecords.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -1023,172 +1303,79 @@ const EditAttendanceSection = ({ sectionId }: { sectionId: string }) => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Attendance Records ({attendanceRecords.length})
+          <div className="space-y-4 mt-6">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Recent Attendance Records ({attendanceRecords.length} found)
             </h4>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <Table>
-                <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
-                  <TableRow>
-                    <TableHead className="font-semibold">Date</TableHead>
-                    <TableHead className="font-semibold">Course</TableHead>
-                    <TableHead className="font-semibold text-center">
-                      Students
-                    </TableHead>
-                    <TableHead className="font-semibold text-center">
-                      Present
-                    </TableHead>
-                    <TableHead className="font-semibold text-center">
-                      Attendance %
-                    </TableHead>
-                    <TableHead className="font-semibold text-center">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendanceRecords.map((record) => {
-                    const totalStudents = record.attendees.length
-                    const presentStudents = record.attendees.filter(
-                      (a) => a.status === 'present'
-                    ).length
-                    const attendancePercentage =
-                      totalStudents > 0
-                        ? ((presentStudents / totalStudents) * 100).toFixed(1)
-                        : '0'
-
-                    return (
-                      <TableRow
-                        key={record._id}
-                        className="hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-                      >
-                        <TableCell className="font-medium">
+            <div className="space-y-3">
+              {attendanceRecords.map((record) => (
+                <div
+                  key={record._id}
+                  className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-orange-600" />
+                        <span className="font-medium text-gray-900 dark:text-white">
                           {new Date(record.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-medium">
+                        </span>
+                        <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs rounded-full">
                           {getCourseName(record.courseId)}
-                        </TableCell>
-                        <TableCell className="text-center font-bold">
-                          {totalStudents}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-green-600">
-                          {presentStudents}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                              parseFloat(attendancePercentage) >= 80
-                                ? 'bg-green-100 text-green-800'
-                                : parseFloat(attendancePercentage) >= 60
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {attendancePercentage}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{record.attendees.length} students</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          <span>
+                            {
+                              record.attendees.filter(
+                                (a) => a.status === 'present'
+                              ).length
+                            }{' '}
+                            present
                           </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditRecord(record)}
-                              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                            >
-                              <FileText className="h-3 w-3 mr-1" />
-                              Edit attendance
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownloadPDF(record)}
-                              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              Download PDF
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {attendanceRecords.map((record) => {
-                const totalStudents = record.attendees.length
-                const presentStudents = record.attendees.filter(
-                  (a) => a.status === 'present'
-                ).length
-                const attendancePercentage =
-                  totalStudents > 0
-                    ? ((presentStudents / totalStudents) * 100).toFixed(1)
-                    : '0'
-
-                return (
-                  <div
-                    key={record._id}
-                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h5 className="font-semibold text-gray-900 dark:text-white">
-                          {new Date(record.date).toLocaleDateString()}
-                        </h5>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {getCourseName(record.courseId)}
-                        </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <XCircle className="h-3 w-3 text-red-500" />
+                          <span>
+                            {
+                              record.attendees.filter(
+                                (a) => a.status === 'absent'
+                              ).length
+                            }{' '}
+                            absent
+                          </span>
+                        </div>
                       </div>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          parseFloat(attendancePercentage) >= 80
-                            ? 'bg-green-100 text-green-800'
-                            : parseFloat(attendancePercentage) >= 60
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {attendancePercentage}%
-                      </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Present:{' '}
-                        <span className="font-bold text-green-600">
-                          {presentStudents}
-                        </span>{' '}
-                        / {totalStudents}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditRecord(record)}
-                          className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                        >
-                          <FileText className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadPDF(record)}
-                          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          PDF
-                        </Button>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditRecord(record)}
+                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadPDF(record)}
+                        className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        PDF
+                      </Button>
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
           </div>
         )}

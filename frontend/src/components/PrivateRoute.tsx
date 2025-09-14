@@ -1,4 +1,10 @@
 import { useAuth } from '@/context/AuthContext'
+import {
+  ROUTES,
+  canAccessRoute,
+  getDashboardRoute,
+  getRouteDisplayName,
+} from '@/routes'
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 
@@ -15,7 +21,7 @@ export function PrivateRoute({ children, requiredRole }: PrivateRouteProps) {
 
   if (!auth) {
     console.log('[PRIVATE ROUTE] No auth context, redirecting to login')
-    return <Navigate to="/login" replace />
+    return <Navigate to={ROUTES.AUTH.LOGIN} replace />
   }
 
   const { user, isLoading, isAuthenticated } = auth
@@ -35,28 +41,29 @@ export function PrivateRoute({ children, requiredRole }: PrivateRouteProps) {
 
   if (!isAuthenticated) {
     console.log('[PRIVATE ROUTE] Not authenticated, redirecting to login')
-    return <Navigate to="/login" replace />
+    return <Navigate to={ROUTES.AUTH.LOGIN} replace />
   }
 
   if (requiredRole && user?.role !== requiredRole) {
+    const currentPath = window.location.pathname
+    const routeName = getRouteDisplayName(currentPath)
+
     console.log(
-      '[PRIVATE ROUTE] Role mismatch. User role:',
+      '[PRIVATE ROUTE] Role mismatch for route:',
+      routeName,
+      '- User role:',
       user?.role,
       'Required:',
       requiredRole
     )
-    // Redirect based on user role
-    if (user?.role === 'admin') {
-      console.log('[PRIVATE ROUTE] Redirecting admin to /admin')
-      return <Navigate to="/admin" replace />
-    } else if (user?.role === 'cr') {
-      console.log('[PRIVATE ROUTE] Redirecting CR to /cr-dashboard')
-      return <Navigate to="/cr-dashboard" replace />
-    } else {
+
+    // Check if user can access current route with their role
+    if (!canAccessRoute(user?.role || '', currentPath)) {
+      const userDashboardRoute = getDashboardRoute(user?.role || '')
       console.log(
-        '[PRIVATE ROUTE] Redirecting other user to /attendance-history'
+        `[PRIVATE ROUTE] Redirecting ${user?.role} from ${routeName} to ${userDashboardRoute}`
       )
-      return <Navigate to="/attendance-history" replace />
+      return <Navigate to={userDashboardRoute} replace />
     }
   }
 

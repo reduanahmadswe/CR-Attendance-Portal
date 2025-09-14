@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (redirectToLogin) {
         // Force redirect to login page
-        window.location.href = '/login'
+        window.location.href = '/auth/login'
       }
     }
   }

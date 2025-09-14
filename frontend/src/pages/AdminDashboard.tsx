@@ -115,17 +115,17 @@ function AdminDashboard() {
         console.log(
           '[ADMIN DASHBOARD] auth.logout not available, fallback redirect'
         )
-        window.location.href = '/login'
+        window.location.href = '/auth/login'
       }
     } catch (error) {
       console.error('[ADMIN DASHBOARD] Logout failed:', error)
       // Still navigate to login even if logout fails
-      window.location.href = '/login'
+      window.location.href = '/auth/login'
     }
   }
 
   const handleNavigateToHistory = () => {
-    navigate('/attendance-history')
+    navigate('/reports/attendance-history')
   }
 
   if (!user || user.role !== 'admin') {

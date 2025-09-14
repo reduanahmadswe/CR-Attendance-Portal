@@ -23,6 +23,7 @@ import {
   useGetSectionsQuery,
 } from '@/lib/apiSlice'
 import type { RootState } from '@/lib/simpleStore'
+import { getDashboardRoute } from '@/routes'
 import type { AttendanceRecord, Section } from '@/types'
 import {
   ArrowLeft,
@@ -53,23 +54,24 @@ export function AttendanceHistory() {
         // Fallback: Clear auth data manually
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
-        window.location.href = '/login'
+        window.location.href = '/auth/login'
       }
     } catch (error) {
       console.error('[ATTENDANCE HISTORY] Logout failed:', error)
       // Still navigate to login even if logout fails
-      window.location.href = '/login'
+      window.location.href = '/auth/login'
     }
   }
 
   const handleBackToDashboard = () => {
-    if (user?.role === 'cr') {
-      navigate('/cr-dashboard')
-    } else if (user?.role === 'admin') {
-      navigate('/admin-dashboard')
-    } else {
-      navigate('/')
-    }
+    const dashboardRoute = getDashboardRoute(user?.role || '')
+    console.log(
+      '[ATTENDANCE HISTORY] Navigating back to dashboard:',
+      dashboardRoute,
+      'for role:',
+      user?.role
+    )
+    navigate(dashboardRoute)
   }
 
   // Filters state

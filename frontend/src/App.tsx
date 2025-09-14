@@ -1,10 +1,5 @@
-﻿import { PrivateRoute } from '@/components/PrivateRoute'
-import { ThemeProvider } from '@/components/theme-provider'
+﻿import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/context/AuthContext'
-import AdminDashboard from '@/pages/AdminDashboard'
-import { AttendanceHistory } from '@/pages/AttendanceHistory'
-import { CRDashboard } from '@/pages/CRDashboard'
-import { Login } from '@/pages/Login'
 import {
   Navigate,
   Route,
@@ -12,6 +7,14 @@ import {
   Routes,
 } from 'react-router-dom'
 import { Toaster } from 'sonner'
+
+// Import organized route components
+import { ROUTES } from '@/routes'
+import { AuthRoutes } from '@/routes/AuthRoutes'
+import { DashboardRoutes } from '@/routes/DashboardRoutes'
+import { ManagementRoutes } from '@/routes/ManagementRoutes'
+import { ReportsRoutes } from '@/routes/ReportsRoutes'
+import { SettingsRoutes } from '@/routes/SettingsRoutes'
 
 function App() {
   return (
@@ -21,48 +24,32 @@ function App() {
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <Routes>
-            <Route path="/login" element={<Login />} />
+            {/* Authentication Routes */}
+            {AuthRoutes()}
+
+            {/* Dashboard Routes */}
+            {DashboardRoutes()}
+
+            {/* Reports Routes */}
+            {ReportsRoutes()}
+
+            {/* Management Routes (Future) */}
+            {ManagementRoutes()}
+
+            {/* Settings Routes (Future) */}
+            {SettingsRoutes()}
+
+            {/* Default Route - Redirect to login */}
             <Route
-              path="/admin"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
+              path="/"
+              element={<Navigate to={ROUTES.AUTH.LOGIN} replace />}
             />
+
+            {/* 404 Route - Redirect to login for now */}
             <Route
-              path="/admin-dashboard"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
+              path="*"
+              element={<Navigate to={ROUTES.AUTH.LOGIN} replace />}
             />
-            <Route
-              path="/cr"
-              element={<Navigate to="/cr-dashboard" replace />}
-            />
-            <Route
-              path="/cr-dashboard"
-              element={
-                <PrivateRoute requiredRole="cr">
-                  <CRDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/attendance-history"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AttendanceHistory />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/attendance"
-              element={<Navigate to="/attendance-history" replace />}
-            />
-            <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
           <Toaster />
         </Router>
