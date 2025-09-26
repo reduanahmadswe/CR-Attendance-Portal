@@ -902,20 +902,81 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                 New Attendance
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader className="pb-6 border-b">
-                <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  Take Attendance
-                </DialogTitle>
+            <DialogContent className="max-w-none md:max-w-6xl max-h-[100vh] md:max-h-[90vh] h-screen md:h-auto w-screen md:w-auto p-0 md:p-6 overflow-hidden md:overflow-y-auto flex flex-col">
+              <DialogHeader className="pb-4 md:pb-6 border-b px-4 md:px-0 pt-4 md:pt-0">
+                <div className="flex items-center justify-between md:justify-start">
+                  <DialogTitle className="text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+                      <Users className="h-4 md:h-5 lg:h-5 w-4 md:w-5 lg:w-5 text-white" />
+                    </div>
+                    Take Attendance
+                  </DialogTitle>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="md:hidden h-8 w-8 p-0 rounded-full"
+                  >
+                    ✕
+                  </Button>
+                </div>
               </DialogHeader>
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="space-y-6 sm:space-y-8 pt-6"
+                className="flex-1 flex flex-col pt-4 md:pt-6 px-4 md:px-0 overflow-hidden"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {/* Scrollable Content Area */}
+                <div className="flex-1 space-y-4 md:space-y-6 lg:space-y-8 overflow-y-auto md:overflow-visible pb-20 md:pb-0">
+                {/* Mobile Course/Date Selection */}
+                <div className="md:hidden space-y-3 mb-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-blue-500" />
+                      Course
+                    </label>
+                    <Select
+                      onValueChange={(value) => {
+                        setSelectedCourse(value)
+                      }}
+                    >
+                      <SelectTrigger className="h-10 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+                        <SelectValue placeholder="Choose a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((course) => (
+                          <SelectItem key={course._id} value={course._id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span className="truncate text-sm">
+                                {course.name}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      Date
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
+                      <Input
+                        {...register('date', { required: true })}
+                        type="date"
+                        className="h-10 pl-10 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-700"
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop/Tablet Course and Date Selection */}
+                <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-3">
                     <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-blue-500" />
@@ -966,20 +1027,48 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
 
                 {selectedCourse && (
                   <div className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Users className="h-5 w-5 text-blue-500" />
-                        Student Attendance ({students.length} students)
-                      </h3>
-                      <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4">
+                        <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          <Users className="h-4 sm:h-5 w-4 sm:w-5 text-blue-500" />
+                          <span className="hidden sm:inline">Student Attendance</span>
+                          <span className="sm:hidden">Attendance</span>
+                          <span className="text-sm sm:text-base">({students.length})</span>
+                        </h3>
+                        <div className="hidden sm:flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={markAllPresent}
+                            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            All Present
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={markAllAbsent}
+                            className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            All Absent
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Mobile Quick Actions */}
+                      <div className="sm:hidden flex gap-2">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={markAllPresent}
-                          className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400"
+                          className="flex-1 h-8 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400"
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <CheckCircle className="h-3 w-3 mr-1" />
                           All Present
                         </Button>
                         <Button
@@ -987,9 +1076,9 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                           size="sm"
                           variant="outline"
                           onClick={markAllAbsent}
-                          className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400"
+                          className="flex-1 h-8 text-xs bg-red-50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-700 dark:text-red-400"
                         >
-                          <XCircle className="h-4 w-4 mr-2" />
+                          <XCircle className="h-3 w-3 mr-1" />
                           All Absent
                         </Button>
                       </div>
@@ -1093,7 +1182,7 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                       </div>
 
                       {/* Mobile Card View */}
-                      <div className="md:hidden max-h-80 overflow-y-auto space-y-3">
+                      <div className="md:hidden max-h-[60vh] overflow-y-auto space-y-2 pb-16">
                         {[...students]
                           .sort((a, b) => {
                             const idA = a.studentId || ''
@@ -1105,15 +1194,25 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                           .map((student: Student) => (
                             <div
                               key={student._id}
-                              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
+                              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2"
                             >
                               <div className="flex flex-col space-y-1">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     ID: {student.studentId}
                                   </span>
+                                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    attendanceData[student._id] === 'present'
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                      : attendanceData[student._id] === 'absent'
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                  }`}>
+                                    {attendanceData[student._id] === 'present' ? '✓ Present' : 
+                                     attendanceData[student._id] === 'absent' ? '✗ Absent' : 'Not Set'}
+                                  </div>
                                 </div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white">
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
                                   {student.name}
                                 </h4>
                               </div>
@@ -1133,13 +1232,13 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                                       'present'
                                     )
                                   }
-                                  className={`flex-1 ${
+                                  className={`flex-1 h-8 text-xs ${
                                     attendanceData[student._id] === 'present'
                                       ? 'bg-green-500 hover:bg-green-600 text-white'
                                       : 'border-green-200 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400'
                                   }`}
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  <CheckCircle className="h-3 w-3 mr-1" />
                                   Present
                                 </Button>
                                 <Button
@@ -1156,13 +1255,13 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                                       'absent'
                                     )
                                   }
-                                  className={`flex-1 ${
+                                  className={`flex-1 h-8 text-xs ${
                                     attendanceData[student._id] === 'absent'
                                       ? 'bg-red-500 hover:bg-red-600 text-white'
                                       : 'border-red-200 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400'
                                   }`}
                                 >
-                                  <XCircle className="h-4 w-4 mr-1" />
+                                  <XCircle className="h-3 w-3 mr-1" />
                                   Absent
                                 </Button>
                               </div>
@@ -1172,22 +1271,44 @@ const TakeAttendanceSection = ({ sectionId }: { sectionId: string }) => {
                     </div>
                   </div>
                 )}
+                </div>
+                {/* End of Scrollable Content Area */}
 
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
+                {/* Desktop Save Actions */}
+                <div className="hidden md:flex flex-row justify-end gap-3 pt-6 border-t">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
-                    className="order-2 sm:order-1"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={!selectedCourse}
-                    className="order-1 sm:order-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
+                    Save Attendance
+                  </Button>
+                </div>
+
+                {/* Mobile Fixed Save Actions */}
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 flex gap-2 z-[100] shadow-2xl">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="flex-1 h-10 text-sm font-medium border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={!selectedCourse}
+                    className="flex-1 h-10 text-sm bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />
                     Save Attendance
                   </Button>
                 </div>
