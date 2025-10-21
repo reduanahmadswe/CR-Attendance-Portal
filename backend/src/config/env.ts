@@ -18,6 +18,15 @@ interface EnvConfig {
 
     BCRYPT_SALT_ROUNDS: string;
     FRONTEND_URL: string | undefined;
+
+    // Email configuration
+    EMAIL_HOST: string;
+    EMAIL_PORT: string;
+    EMAIL_SECURE: string;
+    EMAIL_USER: string;
+    EMAIL_PASSWORD: string;
+    EMAIL_FROM: string;
+    EMAIL_FROM_NAME: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -53,6 +62,15 @@ const loadEnvVariables = (): EnvConfig => {
 
         BCRYPT_SALT_ROUNDS: process.env.BCRYPT_SALT_ROUNDS || '12',
         FRONTEND_URL: process.env.FRONTEND_URL || undefined,
+
+        // Email configuration
+        EMAIL_HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        EMAIL_PORT: process.env.EMAIL_PORT || '587',
+        EMAIL_SECURE: process.env.EMAIL_SECURE || 'false',
+        EMAIL_USER: process.env.EMAIL_USER || '',
+        EMAIL_PASSWORD: process.env.EMAIL_PASSWORD || '',
+        EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@cr-attendance.com',
+        EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || 'CR Attendance Portal',
     };
 };
 

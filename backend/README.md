@@ -25,6 +25,15 @@ A comprehensive Node.js Express TypeScript backend for managing class attendance
   - Attendance history and statistics
   - Update and delete attendance records
 
+- **Announcement & Notification System** 🆕
+  - Create announcements for Quiz, Presentation, Midterm, Final, Assignment, Class Cancel, Class Reschedule
+  - Conditional fields (topic, time, room, slides) for academic announcements
+  - Email notifications to enrolled students with beautiful HTML templates
+  - Copy-to-clipboard text generation for manual sharing
+  - Role-based access with CR section restrictions
+  - Advanced filtering and pagination
+  - [Full Documentation](./ANNOUNCEMENT_MODULE.md)
+
 - **PDF Generation**
   - Generate professional PDF reports for attendance
   - Download and stream PDF functionality
@@ -39,6 +48,7 @@ A comprehensive Node.js Express TypeScript backend for managing class attendance
 - **Authentication**: JWT (jsonwebtoken)
 - **Validation**: Joi
 - **PDF Generation**: Puppeteer
+- **Email**: Nodemailer (for announcements)
 - **Security**: Helmet, CORS, Rate limiting
 - **Testing**: Jest, Supertest
 
@@ -82,6 +92,15 @@ NODE_ENV=development
 
 # Frontend URL (for CORS)
 FRONTEND_URL=http://localhost:5173
+
+# Email Configuration (for Announcements)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+EMAIL_FROM=noreply@cr-attendance.com
+EMAIL_FROM_NAME=CR Attendance Portal
 ```
 
 ## Installation & Setup

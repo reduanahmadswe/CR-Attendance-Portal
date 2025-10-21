@@ -159,3 +159,71 @@ export interface AttendanceStats {
         count: number;
     }[];
 }
+// Announcement types
+export type AnnouncementType = 'quiz-1' | 'quiz-2' | 'quiz-3' | 'quiz-4' | 'presentation' | 'midterm' | 'final' | 'assignment' | 'class_cancel' | 'class_reschedule';
+
+export interface AnnouncementDetails {
+    topic?: string;
+    slideLink?: string;
+    time?: string;
+    room?: string;
+}
+
+export interface Announcement {
+    _id: string;
+    title: string;
+    type: AnnouncementType;
+    message?: string;
+    courseId: string | Course;
+    sectionId: string | Section;
+    createdBy: string | User;
+    sendEmail: boolean;
+    emailSent: boolean;
+    emailSentAt?: string;
+    emailRecipients?: string[];
+    details?: AnnouncementDetails;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateAnnouncementRequest {
+    title: string;
+    type: AnnouncementType;
+    message?: string;
+    courseId: string;
+    sendEmail: boolean;
+    details?: {
+        topic?: string;
+        slideLink?: string;
+        time?: string;
+        room?: string;
+    };
+}
+
+export interface UpdateAnnouncementRequest {
+    title?: string;
+    type?: AnnouncementType;
+    message?: string;
+    courseId?: string;
+    details?: {
+        topic?: string;
+        slideLink?: string;
+        time?: string;
+        room?: string;
+    };
+}
+
+export interface AnnouncementFilters extends PaginationQuery {
+    courseId?: string;
+    sectionId?: string;
+    type?: AnnouncementType;
+}
+
+export interface AnnouncementStats {
+    total: number;
+    byType: {
+        _id: AnnouncementType;
+        count: number;
+        emailsSent: number;
+    }[];
+}

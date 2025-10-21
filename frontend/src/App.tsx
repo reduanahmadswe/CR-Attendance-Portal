@@ -15,6 +15,7 @@ import { DashboardRoutes } from '@/routes/DashboardRoutes'
 import { ManagementRoutes } from '@/routes/ManagementRoutes'
 import { ReportsRoutes } from '@/routes/ReportsRoutes'
 import { SettingsRoutes } from '@/routes/SettingsRoutes'
+import { AnnouncementsRoutes } from '@/routes/AnnouncementsRoutes'
 
 function App() {
   return (
@@ -29,6 +30,9 @@ function App() {
 
             {/* Dashboard Routes */}
             {DashboardRoutes()}
+
+            {/* Announcements Routes */}
+            {AnnouncementsRoutes()}
 
             {/* Reports Routes */}
             {ReportsRoutes()}

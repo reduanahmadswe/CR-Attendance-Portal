@@ -148,4 +148,62 @@ export const schemas = {
         page: Joi.number().integer().min(1).default(1),
         limit: Joi.number().integer().min(1).max(1000).default(10),
     }),
+
+    // Announcement schemas
+    announcementCreate: Joi.object({
+        title: Joi.string().trim().max(200).required(),
+        type: Joi.string()
+            .valid('quiz-1', 'quiz-2', 'quiz-3', 'quiz-4', 'presentation', 'midterm', 'final', 'assignment', 'class_cancel', 'class_reschedule')
+            .required(),
+        message: Joi.string().trim().max(2000).optional().allow(''),
+        courseId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required().messages({
+            'string.pattern.base': 'Invalid course ID format',
+        }),
+        sendEmail: Joi.boolean().default(false),
+        // Optional fields for certain announcement types (all optional)
+        topic: Joi.string()
+            .trim()
+            .max(200)
+            .optional()
+            .allow(''),
+        slideLink: Joi.string()
+            .trim()
+            .max(500)
+            .uri()
+            .optional()
+            .allow(''),
+        time: Joi.date()
+            .optional()
+            .allow(''),
+        room: Joi.string()
+            .trim()
+            .max(100)
+            .optional()
+            .allow(''),
+    }),
+
+    announcementUpdate: Joi.object({
+        title: Joi.string().trim().max(200).optional(),
+        type: Joi.string()
+            .valid('quiz-1', 'quiz-2', 'quiz-3', 'quiz-4', 'presentation', 'midterm', 'final', 'assignment', 'class_cancel', 'class_reschedule')
+            .optional(),
+        message: Joi.string().trim().max(2000).optional().allow(''),
+        topic: Joi.string().trim().max(200).optional(),
+        slideLink: Joi.string().trim().max(500).uri().optional(),
+        time: Joi.date().optional(),
+        room: Joi.string().trim().max(100).optional(),
+    }),
+
+    announcementFilters: Joi.object({
+        courseId: Joi.string().optional(),
+        sectionId: Joi.string().optional(),
+        type: Joi.string()
+            .valid('quiz', 'presentation', 'midterm', 'final', 'assignment', 'class_cancel', 'class_reschedule')
+            .optional(),
+        page: Joi.number().integer().min(1).default(1),
+        limit: Joi.number().integer().min(1).max(100).default(20),
+        sortBy: Joi.string().default('createdAt'),
+        sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+        order: Joi.string().valid('asc', 'desc').default('desc'), // Keep for backward compatibility
+    }),
 };

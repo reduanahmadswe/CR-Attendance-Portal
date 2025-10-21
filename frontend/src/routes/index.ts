@@ -21,6 +21,11 @@ export const ROUTES = {
         STUDENT_REPORTS: '/reports/students',
     },
 
+    // Announcements
+    ANNOUNCEMENTS: {
+        LIST: '/announcements',
+    },
+
     // Management
     MANAGEMENT: {
         SECTIONS: '/management/sections',

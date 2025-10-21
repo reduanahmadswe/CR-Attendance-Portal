@@ -1,11 +1,15 @@
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
+    Announcement,
+    AnnouncementFilters,
+    AnnouncementStats,
     ApiResponse,
     AttendanceFilters,
     AttendanceRecord,
     AttendanceStats,
     Course,
+    CreateAnnouncementRequest,
     CreateAttendanceRequest,
     CreateCourseRequest,
     CreateSectionRequest,
@@ -16,6 +20,7 @@ import type {
     PaginationQuery,
     Section,
     Student,
+    UpdateAnnouncementRequest,
     User
 } from '../types';
 import type { RootState } from './simpleStore';
@@ -80,7 +85,7 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithErrorHandling,
-    tagTypes: ['User', 'Section', 'Course', 'Student', 'AttendanceRecord'],
+    tagTypes: ['User', 'Section', 'Course', 'Student', 'AttendanceRecord', 'Announcement'],
     keepUnusedDataFor: 60, // Keep data for 60 seconds
     refetchOnMountOrArgChange: 30, // Only refetch if data is older than 30 seconds
     refetchOnFocus: false, // Don't refetch when window regains focus
@@ -355,6 +360,48 @@ export const apiSlice = createApi({
                 body: { newPassword },
             }),
         }),
+
+        // Announcements endpoints
+        getAnnouncements: builder.query<ApiResponse<PaginatedResponse<Announcement>>, AnnouncementFilters | undefined>({
+            query: (params) => ({
+                url: '/announcements',
+                params: params || {},
+            }),
+            providesTags: ['Announcement'],
+        }),
+        getAnnouncement: builder.query<ApiResponse<Announcement>, string>({
+            query: (id) => `/announcements/${id}`,
+            providesTags: (_result, _error, id) => [{ type: 'Announcement', id }],
+        }),
+        createAnnouncement: builder.mutation<ApiResponse<{ announcement: Announcement; textMessage: string; emailStatus: { sent: number; failed: number; total: number } | null }>, CreateAnnouncementRequest>({
+            query: (announcementData) => ({
+                url: '/announcements',
+                method: 'POST',
+                body: announcementData,
+            }),
+            invalidatesTags: ['Announcement'],
+        }),
+        updateAnnouncement: builder.mutation<ApiResponse<Announcement>, { id: string; data: UpdateAnnouncementRequest }>({
+            query: ({ id, data }) => ({
+                url: `/announcements/${id}`,
+                method: 'PUT',
+                body: data,
+            }),
+            invalidatesTags: (_result, _error, { id }) => [{ type: 'Announcement', id }, 'Announcement'],
+        }),
+        deleteAnnouncement: builder.mutation<ApiResponse<undefined>, string>({
+            query: (id) => ({
+                url: `/announcements/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Announcement'],
+        }),
+        getAnnouncementStats: builder.query<ApiResponse<AnnouncementStats>, { courseId?: string; sectionId?: string }>({
+            query: (params) => ({
+                url: '/announcements/stats',
+                params,
+            }),
+        }),
     }),
 });
 
@@ -407,4 +454,12 @@ export const {
     useUpdateUserMutation,
     useDeleteUserMutation,
     useResetUserPasswordMutation,
+
+    // Announcements hooks
+    useGetAnnouncementsQuery,
+    useGetAnnouncementQuery,
+    useCreateAnnouncementMutation,
+    useUpdateAnnouncementMutation,
+    useDeleteAnnouncementMutation,
+    useGetAnnouncementStatsQuery,
 } = apiSlice;

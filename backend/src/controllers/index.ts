@@ -1,3 +1,4 @@
+export * as announcementController from './announcementController';
 export * as attendanceController from './attendanceController';
 export * as authController from './authController';
 export * as courseController from './courseController';

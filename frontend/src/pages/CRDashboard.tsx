@@ -37,6 +37,7 @@ import {
 import type { RootState } from '@/lib/simpleStore'
 import type { AttendanceRecord, Course, Student } from '@/types'
 import {
+  Bell,
   BookOpen,
   Calendar,
   CheckCircle,
@@ -416,6 +417,15 @@ export function CRDashboard() {
                 <span className="hidden sm:inline font-medium">
                   {activeSection === 'reports' ? 'Dashboard' : 'Reports'}
                 </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/announcements'}
+                className="flex items-center gap-2 h-10 px-4 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 dark:hover:border-blue-600"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">Announcements</span>
               </Button>
               <div className="p-1 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
                 <ThemeToggle />

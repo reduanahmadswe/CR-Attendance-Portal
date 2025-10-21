@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import announcementRoutes from './announcementRoutes';
 import attendanceRoutes from './attendanceRoutes';
 import authRoutes from './authRoutes';
 import courseRoutes from './courseRoutes';
@@ -15,7 +16,9 @@ router.use('/students', studentRoutes);
 router.use('/courses', courseRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/users', userRoutes);
+router.use('/announcements', announcementRoutes);
 
+export { default as announcementRoutes } from './announcementRoutes';
 export { default as attendanceRoutes } from './attendanceRoutes';
 export { default as authRoutes } from './authRoutes';
 export { default as courseRoutes } from './courseRoutes';
