@@ -66,12 +66,23 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
       throw new Error('No attendees data found in the record');
     }
 
-    // Sort attendees by student ID
-    const sortedAttendees = [...record.attendees].sort((a, b) => {
+    // Filter out attendees with null student data and sort by student ID
+    const validAttendees = record.attendees.filter(a => a.studentId !== null && a.studentId !== undefined);
+    
+    if (validAttendees.length === 0) {
+      throw new Error('No valid student data found in attendance record');
+    }
+    
+    const sortedAttendees = [...validAttendees].sort((a, b) => {
       const idA = a.studentId?.studentId || '';
       const idB = b.studentId?.studentId || '';
       return idA.localeCompare(idB, undefined, { numeric: true });
     });
+
+    const skippedCount = record.attendees.length - validAttendees.length;
+    if (skippedCount > 0) {
+      console.warn(`[PDF GENERATOR] Skipped ${skippedCount} attendee(s) with null student data`);
+    }
 
     console.log('[PDF GENERATOR] Processing', sortedAttendees.length, 'attendees');
 
@@ -220,6 +231,12 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
     let rowIndex = 0;
 
     sortedAttendees.forEach((attendee, index) => {
+      // Skip if student data is null (student might be deleted)
+      if (!attendee.studentId) {
+        console.warn(`[PDF GENERATOR] Skipping attendee at index ${index} - student data is null`);
+        return;
+      }
+
       // Check if we need a new page
       if (currentY > pageHeight - 40) {
         // Add footer to current page
@@ -239,9 +256,9 @@ const generateAttendancePDFWithJsPDF = async (record: PopulatedAttendanceRecord)
         doc.rect(margin, currentY, contentWidth, 7, 'F');
       }
 
-      // Student data
-      const studentId = attendee.studentId.studentId || 'N/A';
-      const studentName = attendee.studentId.name || 'Unknown Student';
+      // Student data with null safety
+      const studentId = attendee.studentId?.studentId || 'N/A';
+      const studentName = attendee.studentId?.name || 'Deleted Student';
       const status = attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1);
 
       doc.setFontSize(9);

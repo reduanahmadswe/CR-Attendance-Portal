@@ -27,6 +27,7 @@
   "author": "CR Attendance Portal Team",
   "license": "MIT",
   "dependencies": {
+    "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -46,6 +47,7 @@
     "serverless-http": "^4.0.0"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/bcryptjs": "^2.4.2",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.13",

@@ -317,6 +317,14 @@ export const apiSlice = createApi({
                 responseHandler: (response) => response.blob(),
             }),
         }),
+        downloadCourseAttendanceZip: builder.mutation<Blob, { courseId: string; sectionId?: string }>({
+            query: ({ courseId, sectionId }) => ({
+                url: `/attendance/course/${courseId}/download-zip`,
+                method: 'GET',
+                params: sectionId ? { sectionId } : {},
+                responseHandler: (response) => response.blob(),
+            }),
+        }),
 
         // Users endpoints (admin only)
         getUsers: builder.query<ApiResponse<PaginatedResponse<User>>, (PaginationQuery & { role?: string; sectionId?: string }) | undefined>({
@@ -446,6 +454,7 @@ export const {
     useGetAttendanceStatsQuery,
     useGenerateAttendancePDFMutation,
     useDownloadAttendancePDFMutation,
+    useDownloadCourseAttendanceZipMutation,
 
     // Users hooks
     useGetUsersQuery,

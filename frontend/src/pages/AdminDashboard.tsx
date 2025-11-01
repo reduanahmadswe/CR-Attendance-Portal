@@ -53,6 +53,7 @@ import {
   useDeleteSectionMutation,
   useDeleteStudentMutation,
   useDeleteUserMutation,
+  useDownloadCourseAttendanceZipMutation,
   useGetAttendanceRecordsQuery,
   useGetSectionCoursesQuery,
   useGetSectionStudentsQuery,
@@ -78,6 +79,7 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  Download,
   Edit,
   FileText,
   GraduationCap,
@@ -738,9 +740,11 @@ const CoursesManagement = () => {
   const [createCourse] = useCreateCourseMutation()
   const [updateCourse] = useUpdateCourseMutation()
   const [deleteCourse] = useDeleteCourseMutation()
+  const [downloadCourseZip] = useDownloadCourseAttendanceZipMutation()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [downloadingCourseId, setDownloadingCourseId] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, setValue } =
     useForm<CreateCourseRequest>()
@@ -785,6 +789,60 @@ const CoursesManagement = () => {
       } catch (error: unknown) {
         toast.error(handleApiError(error) || 'Failed to delete course')
       }
+    }
+  }
+
+  const handleDownloadAllAttendance = async (courseId: string, courseName: string) => {
+    try {
+      setDownloadingCourseId(courseId)
+      console.log('Starting ZIP download for course:', courseId)
+      
+      const blob = await downloadCourseZip({ 
+        courseId, 
+        sectionId: selectedSection 
+      }).unwrap()
+      
+      console.log('ZIP blob received, size:', blob.size)
+
+      if (blob.size === 0) {
+        throw new Error('Received empty ZIP file')
+      }
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `attendance-${courseName.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.zip`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('All attendance records downloaded successfully!')
+      console.log('ZIP download completed successfully')
+    } catch (error) {
+      console.error('Error downloading attendance ZIP:', error)
+
+      let errorMessage = 'Failed to download attendance records. Please try again.'
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 403) {
+          errorMessage = 'You do not have permission to download attendance records.'
+        } else if (error.status === 404) {
+          errorMessage = 'No attendance records found for this course.'
+        } else if (
+          error &&
+          typeof error === 'object' &&
+          'data' in error &&
+          error.data &&
+          typeof error.data === 'object' &&
+          'message' in error.data
+        ) {
+          errorMessage = String(error.data.message)
+        }
+      }
+
+      toast.error(errorMessage)
+    } finally {
+      setDownloadingCourseId(null)
     }
   }
 
@@ -1008,6 +1066,20 @@ const CoursesManagement = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                onClick={() => handleDownloadAllAttendance(course._id, course.name)}
+                                disabled={downloadingCourseId === course._id}
+                                className="border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                title="Download all attendance records for this course"
+                              >
+                                {downloadingCourseId === course._id ? (
+                                  <div className="h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Download className="h-3 w-3" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 onClick={() => handleEdit(course)}
                                 className="border-orange-200 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
                               >
@@ -1057,6 +1129,20 @@ const CoursesManagement = () => {
                         )}
                       </div>
                       <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadAllAttendance(course._id, course.name)}
+                          disabled={downloadingCourseId === course._id}
+                          className="border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 p-2"
+                          title="Download all attendance"
+                        >
+                          {downloadingCourseId === course._id ? (
+                            <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

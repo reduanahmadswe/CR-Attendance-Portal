@@ -19,4 +19,7 @@ router.delete('/:id', authorize('admin', 'cr'), attendanceController.deleteAtten
 router.get('/:id/pdf', authorize('admin', 'cr'), attendanceController.streamAttendancePDF);
 router.get('/:id/download', authorize('admin', 'cr'), attendanceController.generateAttendancePDFEndpoint);
 
+// Download all attendance records for a course as ZIP
+router.get('/course/:courseId/download-zip', authorize('admin', 'cr'), attendanceController.downloadCourseAttendanceZip);
+
 export default router;

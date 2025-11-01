@@ -28,6 +28,7 @@ import {
 import {
   useCreateAttendanceRecordMutation,
   useDownloadAttendancePDFMutation,
+  useDownloadCourseAttendanceZipMutation,
   useGetAttendanceRecordsQuery,
   useGetCourseStudentsQuery,
   useGetSectionCoursesQuery,
@@ -77,6 +78,8 @@ export function CRDashboard() {
   }>({})
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [updateAttendanceRecord] = useUpdateAttendanceRecordMutation()
+  const [downloadCourseZip] = useDownloadCourseAttendanceZipMutation()
+  const [downloadingCourseId, setDownloadingCourseId] = useState<string | null>(null)
 
   // Navigation state for different sections
   const [activeSection, setActiveSection] = useState<'dashboard' | 'reports'>(
@@ -357,6 +360,60 @@ export function CRDashboard() {
     })
   }
 
+  const handleDownloadAllAttendance = async (courseId: string, courseName: string) => {
+    try {
+      setDownloadingCourseId(courseId)
+      console.log('Starting ZIP download for course:', courseId)
+      
+      const blob = await downloadCourseZip({ 
+        courseId, 
+        sectionId: sectionId 
+      }).unwrap()
+      
+      console.log('ZIP blob received, size:', blob.size)
+
+      if (blob.size === 0) {
+        throw new Error('Received empty ZIP file')
+      }
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `attendance-${courseName.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.zip`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('All attendance records downloaded successfully!')
+      console.log('ZIP download completed successfully')
+    } catch (error) {
+      console.error('Error downloading attendance ZIP:', error)
+
+      let errorMessage = 'Failed to download attendance records. Please try again.'
+      if (error && typeof error === 'object' && 'status' in error) {
+        if (error.status === 403) {
+          errorMessage = 'You do not have permission to download attendance records.'
+        } else if (error.status === 404) {
+          errorMessage = 'No attendance records found for this course.'
+        } else if (
+          error &&
+          typeof error === 'object' &&
+          'data' in error &&
+          error.data &&
+          typeof error.data === 'object' &&
+          'message' in error.data
+        ) {
+          errorMessage = String(error.data.message)
+        }
+      }
+
+      toast.error(errorMessage)
+    } finally {
+      setDownloadingCourseId(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -491,6 +548,13 @@ export function CRDashboard() {
               </div>
             ) : (
               <div className="space-y-8 sm:space-y-12 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+                {/* Download Course Attendance Section */}
+                <DownloadCourseAttendanceSection
+                  courses={mainCourses}
+                  onDownloadCourseAttendance={handleDownloadAllAttendance}
+                  downloadingCourseId={downloadingCourseId}
+                />
+
                 {/* Manage Attendance Reports Section */}
                 <EditAttendanceSection
                   sectionId={sectionId}
@@ -748,42 +812,127 @@ const CRStatsCards = ({
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
-      {stats.map((stat, index) => (
-        <Card
-          key={index}
-          className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500`}
-          style={{
-            animationDelay: `${index * 150}ms`,
-            animation: 'fadeInUp 0.8s ease-out forwards',
-          }}
-        >
-          <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div
-                  className={`inline-flex p-2 sm:p-2.5 lg:p-3 rounded-lg lg:rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
-                >
-                  <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
+        {stats.map((stat, index) => (
+          <Card
+            key={index}
+            className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500`}
+            style={{
+              animationDelay: `${index * 150}ms`,
+              animation: 'fadeInUp 0.8s ease-out forwards',
+            }}
+          >
+            <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div
+                    className={`inline-flex p-2 sm:p-2.5 lg:p-3 rounded-lg lg:rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
+                  >
+                    <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1 sm:mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
+                    {stat.title}
+                  </p>
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-1 sm:mb-2 group-hover:scale-105 transition-transform duration-300">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 font-medium hidden sm:block lg:block">
+                    {stat.description}
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1 sm:mb-2 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
-                  {stat.title}
-                </p>
-                <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-1 sm:mb-2 group-hover:scale-105 transition-transform duration-300">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium hidden sm:block lg:block">
-                  {stat.description}
+
+                {/* Decorative corner element */}
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// Download Course Attendance Section Component
+const DownloadCourseAttendanceSection = ({
+  courses,
+  onDownloadCourseAttendance,
+  downloadingCourseId,
+}: {
+  courses: Course[]
+  onDownloadCourseAttendance: (courseId: string, courseName: string) => void
+  downloadingCourseId: string | null
+}) => {
+  if (courses.length === 0) {
+    return (
+      <Card className="border border-gray-200/60 dark:border-gray-700/40 shadow-xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 backdrop-blur-sm">
+        <CardContent className="p-12 text-center">
+          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
+            <Download className="h-12 w-12 text-indigo-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            No Courses Available
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            No courses found for your section.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="border border-gray-200/60 dark:border-gray-700/40 shadow-xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <Download className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          Download Course Attendance
+        </CardTitle>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+          Download all attendance records for any course as a ZIP file containing individual PDFs for each date
+        </p>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {courses.map((course) => (
+          <div
+            key={course._id}
+            className="group p-5 bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-base mb-1 line-clamp-2">
+                  {course.name}
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                  {course.code}
                 </p>
               </div>
-
-              {/* Decorative corner element */}
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+            <Button
+              size="sm"
+              onClick={() => onDownloadCourseAttendance(course._id, course.name)}
+              disabled={downloadingCourseId === course._id}
+              className="w-full h-10 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all group-hover:scale-105"
+            >
+              {downloadingCourseId === course._id ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download All Records
+                </>
+              )}
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -1345,6 +1494,8 @@ const EditAttendanceSection = ({
   onEditRecord: (record: AttendanceRecord) => void
 }) => {
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 5
 
   // Get courses for display
   const { data: coursesResponse } = useGetSectionCoursesQuery(
@@ -1353,14 +1504,23 @@ const EditAttendanceSection = ({
   )
   const courses = coursesResponse?.data?.data || []
 
-  // Get attendance records for this section and selected course
+  // Get attendance records for this section and selected course with pagination
   const { data: attendanceResponse, isLoading } = useGetAttendanceRecordsQuery({
     sectionId,
     courseId:
       selectedCourseId === 'all' ? undefined : selectedCourseId || undefined,
-    limit: 50,
+    page: currentPage,
+    limit: pageSize,
   })
   const attendanceRecords = attendanceResponse?.data?.data || []
+  const totalRecords = attendanceResponse?.data?.pagination?.total || 0
+  const totalPages = Math.ceil(totalRecords / pageSize)
+
+  // Reset to page 1 when course changes
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourseId(courseId)
+    setCurrentPage(1)
+  }
 
   const handleEditRecord = (record: AttendanceRecord) => {
     onEditRecord(record)
@@ -1433,7 +1593,7 @@ const EditAttendanceSection = ({
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
             Select Course
           </h4>
-          <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+          <Select value={selectedCourseId} onValueChange={handleCourseChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose a course to view attendance records" />
             </SelectTrigger>
@@ -1466,9 +1626,14 @@ const EditAttendanceSection = ({
           </div>
         ) : (
           <div className="space-y-4 mt-6">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Recent Attendance Records ({attendanceRecords.length} found)
-            </h4>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Attendance Records
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {attendanceRecords.length} of {totalRecords} records
+              </p>
+            </div>
             <div className="space-y-3">
               {attendanceRecords.map((record) => (
                 <div
@@ -1539,6 +1704,82 @@ const EditAttendanceSection = ({
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="px-3"
+                  >
+                    First
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3"
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          size="sm"
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-10 ${
+                            currentPage === pageNum
+                              ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white'
+                              : ''
+                          }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3"
+                  >
+                    Next
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="px-3"
+                  >
+                    Last
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -1552,6 +1793,8 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
   const [availableSessions, setAvailableSessions] = useState<
     AttendanceRecord[]
   >([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 5
 
   // Get courses for the CR's section
   const { data: coursesResponse } = useGetSectionCoursesQuery(
@@ -1583,10 +1826,19 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
       setAvailableSessions(courseSessions)
+      setCurrentPage(1) // Reset to page 1 when course changes
     } else {
       setAvailableSessions([])
+      setCurrentPage(1)
     }
   }, [selectedCourse, allAttendance])
+
+  // Pagination calculations
+  const totalSessions = availableSessions.length
+  const totalPages = Math.ceil(totalSessions / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedSessions = availableSessions.slice(startIndex, endIndex)
 
   const [downloadAttendancePDF] = useDownloadAttendancePDFMutation()
 
@@ -1691,11 +1943,18 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
           {/* Available Sessions */}
           {selectedCourse && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-emerald-500" />
-                <h4 className="font-semibold text-gray-900 dark:text-white">
-                  Available Sessions ({availableSessions.length})
-                </h4>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-emerald-500" />
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Available Sessions
+                  </h4>
+                </div>
+                {availableSessions.length > 0 && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {startIndex + 1}-{Math.min(endIndex, totalSessions)} of {totalSessions} sessions
+                  </p>
+                )}
               </div>
 
               {availableSessions.length === 0 ? (
@@ -1706,8 +1965,9 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-3">
-                  {availableSessions.map((session) => {
+                <>
+                  <div className="grid gap-3">
+                    {paginatedSessions.map((session) => {
                     const courseName =
                       typeof session.courseId === 'string'
                         ? session.courseId
@@ -1774,6 +2034,89 @@ const DownloadReportsSection = ({ sectionId }: { sectionId: string }) => {
                     )
                   })}
                 </div>
+
+                {/* Pagination Controls - Always show if there are sessions */}
+                {availableSessions.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {totalPages > 1 ? (
+                        <>Page {currentPage} of {totalPages}</>
+                      ) : (
+                        <>Showing all {totalSessions} sessions</>
+                      )}
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="px-3"
+                        >
+                          First
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="px-3"
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum
+                            if (totalPages <= 5) {
+                              pageNum = i + 1
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i
+                            } else {
+                              pageNum = currentPage - 2 + i
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                size="sm"
+                                variant={currentPage === pageNum ? 'default' : 'outline'}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`w-10 ${
+                                  currentPage === pageNum
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
+                                    : ''
+                                }`}
+                              >
+                                {pageNum}
+                              </Button>
+                            )
+                          })}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="px-3"
+                        >
+                          Next
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="px-3"
+                        >
+                          Last
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
               )}
             </div>
           )}
