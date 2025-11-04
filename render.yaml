@@ -1,0 +1,42 @@
+# Render Blueprint for CR Attendance Portal
+# This file configures both backend and frontend services
+
+services:
+  # Backend Web Service
+  - type: web
+    name: cr-portal-backend
+    env: node
+    region: singapore  # Change to your preferred region
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false  # You'll need to add this manually
+      - key: JWT_SECRET
+        generateValue: true  # Auto-generate secure secret
+      - key: JWT_REFRESH_SECRET
+        generateValue: true  # Auto-generate secure secret
+      - key: FRONTEND_URL
+        value: https://cr-portal-frontend.onrender.com
+
+  # Frontend Static Site
+  - type: web
+    name: cr-portal-frontend
+    env: static
+    region: singapore  # Change to your preferred region
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://cr-portal-backend.onrender.com/api
