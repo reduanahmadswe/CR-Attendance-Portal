@@ -55,7 +55,12 @@ export function ChangePasswordModal({ isOpen, onClose, isFirstLogin = false }: C
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        throw new Error('Authentication token not found. Please login again.');
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/student/change-password`, {
         method: 'PUT',
         headers: {
