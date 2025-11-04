@@ -5,7 +5,7 @@ import { AppError, asyncHandler } from '../utils/errorHandler';
 
 export const createStudent = asyncHandler(async (req: Request, res: Response) => {
     const { sectionId } = req.params;
-    const { studentId, name, email, courses = [] } = req.body;
+    const { studentId, name, email, courses = [], password } = req.body;
 
     console.log('[STUDENT CREATE] Section ID:', sectionId);
     console.log('[STUDENT CREATE] Request body:', { studentId, name, email, courses });
@@ -35,10 +35,15 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
         }
     }
 
+    // Generate default password if not provided: use Student ID as password
+    const defaultPassword = password || studentId;
+
     const student = await Student.create({
         studentId,
         name,
         email,
+        password: defaultPassword,
+        isPasswordDefault: !password, // true if using default (Student ID), false if custom password provided
         sectionId,
         courses,
     });
@@ -79,10 +84,12 @@ export const createStudentsBatch = asyncHandler(async (req: Request, res: Respon
         }
     }
 
-    // Add sectionId to each student
+    // Add sectionId and default password to each student
     const studentsWithSection = students.map((student: any) => ({
         ...student,
         sectionId,
+        password: student.password || student.studentId, // Use Student ID as default password
+        isPasswordDefault: !student.password, // true if using default (Student ID), false if custom password provided
     }));
 
     const createdStudents = await Student.insertMany(studentsWithSection);

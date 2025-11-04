@@ -1,14 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import bcryptjs from 'bcryptjs';
 
 export interface IStudent extends Document {
     _id: string;
     studentId: string;
     name: string;
     email: string;
+    password: string;
+    isPasswordDefault: boolean; // Track if using default password
     sectionId: mongoose.Types.ObjectId;
     courses: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
+    comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const studentSchema = new Schema<IStudent>(
@@ -32,6 +36,15 @@ const studentSchema = new Schema<IStudent>(
             required: true,
             lowercase: true,
             trim: true,
+        },
+        password: {
+            type: String,
+            required: true,
+            select: false, // Don't return password by default
+        },
+        isPasswordDefault: {
+            type: Boolean,
+            default: true,
         },
         sectionId: {
             type: Schema.Types.ObjectId,
@@ -57,6 +70,31 @@ studentSchema.pre('save', function (next) {
     }
     next();
 });
+
+// Hash password before saving
+studentSchema.pre('save', async function (next) {
+    // Only hash the password if it has been modified (or is new)
+    if (!this.isModified('password')) {
+        return next();
+    }
+
+    try {
+        const salt = await bcryptjs.genSalt(12);
+        this.password = await bcryptjs.hash(this.password, salt);
+        next();
+    } catch (error: any) {
+        next(error);
+    }
+});
+
+// Method to compare password
+studentSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+    try {
+        return await bcryptjs.compare(candidatePassword, this.password);
+    } catch (error) {
+        return false;
+    }
+};
 
 // Index for faster queries
 studentSchema.index({ studentId: 1 });

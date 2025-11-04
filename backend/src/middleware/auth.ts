@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { User } from '../models';
+import { Student, User } from '../models';
 import { JWTPayload } from '../types';
 import { AppError, asyncHandler } from '../utils/errorHandler';
 import { verifyAccessToken } from '../utils/jwt';
@@ -31,18 +31,51 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
         const decoded = verifyAccessToken(token) as JWTPayload;
 
         // Verify user still exists and is active
-        const user = await User.findById(decoded.userId).select('-passwordHash');
+        // Check if it's a student or regular user based on role in token
+        let userExists;
+        let userEmail;
+        let userRole;
+        let userId;
+        let sectionId;
 
-        if (!user) {
+        if (decoded.role === 'student') {
+            // For students, check Student model
+            const student = await Student.findById(decoded.userId).select('-password');
+            
+            if (!student) {
+                throw new AppError('Student not found', 401);
+            }
+
+            userExists = true;
+            userId = student._id.toString();
+            userEmail = student.email;
+            userRole = 'student';
+            sectionId = student.sectionId?.toString();
+        } else {
+            // For admin/cr/instructor/viewer, check User model
+            const user = await User.findById(decoded.userId).select('-passwordHash');
+            
+            if (!user) {
+                throw new AppError('User not found', 401);
+            }
+
+            userExists = true;
+            userId = user._id.toString();
+            userEmail = user.email;
+            userRole = user.role;
+            sectionId = user.sectionId?.toString();
+        }
+
+        if (!userExists) {
             throw new AppError('User not found', 401);
         }
 
         // Add user info to request
         req.user = {
-            userId: user._id.toString(),
-            email: user.email,
-            role: user.role,
-            ...(user.sectionId && { sectionId: user.sectionId.toString() }),
+            userId: userId,
+            email: userEmail,
+            role: userRole,
+            ...(sectionId && { sectionId }),
         };
 
         console.log('Auth middleware - User set:', {

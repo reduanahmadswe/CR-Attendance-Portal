@@ -7,6 +7,9 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
+// Student's own attendance records
+router.get('/student/:studentId', attendanceController.getStudentAttendance);
+
 // Attendance CRUD
 router.post('/', authorize('admin', 'cr'), validate(schemas.attendanceCreate), attendanceController.createAttendance);
 router.get('/', validateQuery(schemas.attendanceFilters), attendanceController.getAttendanceRecords);

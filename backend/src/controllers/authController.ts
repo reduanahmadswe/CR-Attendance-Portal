@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User } from '../models';
+import { Student, User } from '../models';
 import { ApiResponse } from '../types';
 import { AppError, asyncHandler } from '../utils/errorHandler';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
@@ -112,15 +112,38 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-    const user = await User.findById(req.user?.userId).populate('sectionId', 'name code');
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
 
-    if (!user) {
-        throw new AppError('User not found', 404);
+    let profileData;
+
+    // Check if user is a student
+    if (userRole === 'student') {
+        profileData = await Student.findById(userId)
+            .populate('sectionId', 'name code')
+            .populate('courses', 'name code');
+        
+        if (!profileData) {
+            throw new AppError('Student not found', 404);
+        }
+
+        // Add role to student profile
+        profileData = {
+            ...profileData.toJSON(),
+            role: 'student',
+        };
+    } else {
+        // Regular user (admin/cr/instructor/viewer)
+        profileData = await User.findById(userId).populate('sectionId', 'name code');
+        
+        if (!profileData) {
+            throw new AppError('User not found', 404);
+        }
     }
 
     const response: ApiResponse<any> = {
         success: true,
-        data: user,
+        data: profileData,
     };
 
     res.status(200).json(response);
@@ -167,6 +190,104 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
     // Update password
     user.passwordHash = newPassword;
     await user.save();
+
+    const response: ApiResponse = {
+        success: true,
+        message: 'Password changed successfully',
+    };
+
+    res.status(200).json(response);
+});
+
+/**
+ * Student Login
+ * POST /api/auth/student/login
+ */
+export const studentLogin = asyncHandler(async (req: Request, res: Response) => {
+    const { studentId, password } = req.body;
+
+    // Find student by studentId
+    const student = await Student.findOne({ studentId })
+        .select('+password')
+        .populate('sectionId', 'name code')
+        .populate('courses', 'name code');
+
+    if (!student) {
+        throw new AppError('Invalid student ID or password', 401);
+    }
+
+    // Check password
+    const isPasswordValid = await student.comparePassword(password);
+
+    if (!isPasswordValid) {
+        throw new AppError('Invalid student ID or password', 401);
+    }
+
+    // Generate tokens with student role
+    const tokens = generateTokens({
+        userId: student._id,
+        email: student.email,
+        role: 'student', // Student role
+        sectionId: student.sectionId.toString(),
+    });
+
+    // Set refresh token as httpOnly cookie
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Remove password from student object
+    const studentResponse = {
+        _id: student._id,
+        studentId: student.studentId,
+        name: student.name,
+        email: student.email,
+        sectionId: student.sectionId,
+        courses: student.courses,
+        isPasswordDefault: student.isPasswordDefault,
+        role: 'student', // Add role to response
+    };
+
+    const response: ApiResponse<{ user: any; accessToken: string }> = {
+        success: true,
+        data: {
+            user: studentResponse,
+            accessToken: tokens.accessToken,
+        },
+        message: 'Student login successful',
+    };
+
+    res.status(200).json(response);
+});
+
+/**
+ * Student Change Password
+ * PUT /api/auth/student/change-password
+ */
+export const studentChangePassword = asyncHandler(async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    const studentId = req.user?.userId;
+
+    const student = await Student.findById(studentId).select('+password');
+
+    if (!student) {
+        throw new AppError('Student not found', 404);
+    }
+
+    // Verify current password
+    const isPasswordValid = await student.comparePassword(currentPassword);
+    
+    if (!isPasswordValid) {
+        throw new AppError('Current password is incorrect', 400);
+    }
+
+    // Update password
+    student.password = newPassword;
+    student.isPasswordDefault = false; // Mark that password has been changed
+    await student.save();
 
     const response: ApiResponse = {
         success: true,

@@ -19,6 +19,9 @@ interface EnvConfig {
     BCRYPT_SALT_ROUNDS: string;
     FRONTEND_URL: string | undefined;
 
+    // QR Code Configuration
+    QR_ENCRYPTION_KEY: string;
+
     // Email configuration
     EMAIL_HOST: string;
     EMAIL_PORT: string;
@@ -62,6 +65,9 @@ const loadEnvVariables = (): EnvConfig => {
 
         BCRYPT_SALT_ROUNDS: process.env.BCRYPT_SALT_ROUNDS || '12',
         FRONTEND_URL: process.env.FRONTEND_URL || undefined,
+
+        // QR Code configuration
+        QR_ENCRYPTION_KEY: process.env.QR_ENCRYPTION_KEY || 'dev-qr-encryption-key-32chars',
 
         // Email configuration
         EMAIL_HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',

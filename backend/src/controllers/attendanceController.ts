@@ -659,3 +659,49 @@ export const downloadCourseAttendanceZip = asyncHandler(async (req: Request, res
         throw new AppError('Failed to create attendance ZIP file', 500);
     }
 });
+
+/**
+ * Get student's own attendance records
+ * GET /api/attendance/student/:studentId
+ */
+export const getStudentAttendance = asyncHandler(async (req: Request, res: Response) => {
+    const { studentId } = req.params;
+
+    // Verify student exists
+    const student = await Student.findById(studentId);
+    if (!student) {
+        throw new AppError('Student not found', 404);
+    }
+
+    // Get all attendance records where this student is present
+    const attendanceRecords = await AttendanceRecord.find({
+        'attendance.studentId': studentId,
+    })
+        .populate('courseId', 'name code')
+        .populate('sectionId', 'name')
+        .sort({ date: -1 })
+        .lean();
+
+    // Format the response
+    const formattedRecords = attendanceRecords.map((record: any) => {
+        const studentAttendance = record.attendance.find(
+            (a: any) => a.studentId.toString() === studentId
+        );
+
+        return {
+            _id: record._id,
+            date: record.date,
+            courseId: record.courseId,
+            sectionId: record.sectionId,
+            attendance: studentAttendance,
+        };
+    });
+
+    const response: ApiResponse<any> = {
+        success: true,
+        message: 'Student attendance records retrieved successfully',
+        data: formattedRecords,
+    };
+
+    res.status(200).json(response);
+});

@@ -16,6 +16,15 @@ const app = express();
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+// Multiple allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://diucrportal.vercel.app',
+  'https://*.vercel.app', // Allow all vercel apps for testing
+  FRONTEND_URL,
+].filter((origin, index, self) => self.indexOf(origin) === index); // Remove duplicates
+
 
 app.set('trust proxy', 1);
 
@@ -36,7 +45,22 @@ if (NODE_ENV === 'production') {
 
 // CORS 
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost and all vercel.app domains
+    if (
+      origin.includes('localhost') || 
+      origin.endsWith('.vercel.app') ||
+      allowedOrigins.includes(origin)
+    ) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -72,9 +96,20 @@ app.get('/api/health', (req, res) => {
 
 // Preflight
 app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', FRONTEND_URL);
+  const origin = req.headers.origin;
+  
+  // Allow localhost and all vercel.app domains
+  if (origin && (
+    origin.includes('localhost') || 
+    origin.endsWith('.vercel.app') ||
+    allowedOrigins.includes(origin)
+  )) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });
 
