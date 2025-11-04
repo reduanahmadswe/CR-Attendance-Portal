@@ -24,7 +24,7 @@ import {
   XCircle,
   KeyRound,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -75,12 +75,40 @@ export function StudentDashboard() {
   }, [isPasswordDefault, hasShownPasswordPrompt]);
 
   // Fetch student's attendance history
-  const { data: attendanceResponse, isLoading: attendanceLoading } = useGetStudentAttendanceQuery(
+  const { data: attendanceResponse, isLoading: attendanceLoading, error: attendanceError } = useGetStudentAttendanceQuery(
     studentId,
     { skip: !studentId }
   );
 
-  const attendanceRecords = (attendanceResponse?.data || []) as unknown as StudentAttendanceRecord[];
+  // Debug: Log API response
+  useEffect(() => {
+    console.log('🔍 Student ID:', studentId);
+    console.log('🔍 Attendance Loading:', attendanceLoading);
+    console.log('🔍 Attendance Response:', attendanceResponse);
+    console.log('🔍 Attendance Error:', attendanceError);
+  }, [studentId, attendanceLoading, attendanceResponse, attendanceError]);
+
+  const attendanceRecords = useMemo(() => 
+    (attendanceResponse?.data || []) as unknown as StudentAttendanceRecord[], 
+    [attendanceResponse?.data]
+  );
+
+  // Debug: Log attendance data to verify it's counting from all courses
+  useEffect(() => {
+    console.log('📊 Attendance Records Array:', attendanceRecords);
+    if (attendanceRecords.length > 0) {
+      console.log('📊 Total Attendance Records:', attendanceRecords.length);
+      console.log('📚 Courses:', [...new Set(attendanceRecords.map(r => 
+        typeof r.courseId === 'object' ? r.courseId.name : 'Unknown'
+      ))]);
+      console.log('✅ Present:', attendanceRecords.filter(r => r.attendance?.status === 'present').length);
+      console.log('❌ Absent:', attendanceRecords.filter(r => r.attendance?.status === 'absent').length);
+      console.log('⏰ Late:', attendanceRecords.filter(r => r.attendance?.status === 'late').length);
+      console.log('📝 Excused:', attendanceRecords.filter(r => r.attendance?.status === 'excused').length);
+    } else {
+      console.log('⚠️ No attendance records found!');
+    }
+  }, [attendanceRecords]);
 
   // Loading state
   if (isLoading) {
