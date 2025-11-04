@@ -1,4 +1,5 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { QRGenerator } from '@/components/QRGenerator'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +49,7 @@ import {
   FileText,
   LogOut,
   Plus,
+  QrCode,
   Users,
   XCircle,
 } from 'lucide-react'
@@ -82,7 +84,7 @@ export function CRDashboard() {
   const [downloadingCourseId, setDownloadingCourseId] = useState<string | null>(null)
 
   // Navigation state for different sections
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'reports'>(
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'reports' | 'qr-attendance'>(
     'dashboard'
   )
 
@@ -438,6 +440,8 @@ export function CRDashboard() {
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent animate-gradient">
                   {activeSection === 'dashboard'
                     ? 'CR Dashboard'
+                    : activeSection === 'qr-attendance'
+                    ? 'QR Code Attendance'
                     : 'Attendance Reports'}
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
@@ -450,12 +454,30 @@ export function CRDashboard() {
                       Reports View
                     </span>
                   )}
+                  {activeSection === 'qr-attendance' && (
+                    <span className="ml-2 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                      QR Attendance
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
 
             {/* Actions with enhanced styling */}
             <div className="flex items-center gap-3">
+              <Button
+                variant={activeSection === 'qr-attendance' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveSection('qr-attendance')}
+                className={`flex items-center gap-2 h-10 px-4 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm ${
+                  activeSection === 'qr-attendance'
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-105'
+                    : 'border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 hover:border-emerald-300 dark:hover:from-emerald-900/30 dark:hover:to-green-900/30 dark:hover:border-emerald-600'
+                }`}
+              >
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">QR Attendance</span>
+              </Button>
               <Button
                 variant={activeSection === 'reports' ? 'default' : 'outline'}
                 size="sm"
@@ -544,6 +566,13 @@ export function CRDashboard() {
                     attendance={mainAttendance}
                     isLoading={mainDataLoading}
                   />
+                </ErrorBoundary>
+              </div>
+            ) : activeSection === 'qr-attendance' ? (
+              <div className="space-y-8 sm:space-y-12 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+                {/* QR Attendance Section */}
+                <ErrorBoundary>
+                  <QRGenerator sectionId={sectionId} courses={mainCourses || []} />
                 </ErrorBoundary>
               </div>
             ) : (

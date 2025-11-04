@@ -78,12 +78,14 @@ const ArrowRightIcon = () => (
 export function Login() {
   // State management
   const [email, setEmail] = useState('')
+  const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
+  const [loginType, setLoginType] = useState<'admin' | 'student'>('admin')
   const navigate = useNavigate()
 
   // Authentication hooks
   const auth = useAuth()
-  const { isAuthenticated, user, login: authLogin } = auth
+  const { isAuthenticated, user, login: authLogin, studentLogin: authStudentLogin } = auth
   const [, { isLoading }] = useLoginMutation()
 
   // Redirect authenticated users to their dashboard
@@ -97,8 +99,15 @@ export function Login() {
     e.preventDefault()
 
     try {
-      const userData = await authLogin(email, password)
-      toast.success('Login successful!')
+      let userData
+      
+      if (loginType === 'student') {
+        userData = await authStudentLogin(studentId, password)
+        toast.success('Student login successful!')
+      } else {
+        userData = await authLogin(email, password)
+        toast.success('Login successful!')
+      }
 
       const dashboardRoute = getDashboardRoute(userData.role)
       navigate(dashboardRoute)
@@ -119,9 +128,13 @@ export function Login() {
 
       {/* Main Login Card */}
       <LoginCard
+        loginType={loginType}
+        setLoginType={setLoginType}
         email={email}
+        studentId={studentId}
         password={password}
         setEmail={setEmail}
+        setStudentId={setStudentId}
         setPassword={setPassword}
         handleSubmit={handleSubmit}
         isLoading={isLoading}
@@ -143,18 +156,26 @@ const BackgroundDecorations = () => (
 
 // Main login card component
 interface LoginCardProps {
+  loginType: 'admin' | 'student'
+  setLoginType: (type: 'admin' | 'student') => void
   email: string
+  studentId: string
   password: string
   setEmail: (value: string) => void
+  setStudentId: (value: string) => void
   setPassword: (value: string) => void
   handleSubmit: (e: React.FormEvent) => void
   isLoading: boolean
 }
 
 const LoginCard = ({
+  loginType,
+  setLoginType,
   email,
+  studentId,
   password,
   setEmail,
+  setStudentId,
   setPassword,
   handleSubmit,
   isLoading,
@@ -182,10 +203,39 @@ const LoginCard = ({
     </CardHeader>
 
     <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-4 sm:pb-6">
+      {/* Login Type Tabs */}
+      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setLoginType('admin')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            loginType === 'admin'
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          Admin/CR
+        </button>
+        <button
+          type="button"
+          onClick={() => setLoginType('student')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            loginType === 'student'
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          Student
+        </button>
+      </div>
+
       <LoginForm
+        loginType={loginType}
         email={email}
+        studentId={studentId}
         password={password}
         setEmail={setEmail}
+        setStudentId={setStudentId}
         setPassword={setPassword}
         handleSubmit={handleSubmit}
         isLoading={isLoading}
@@ -195,38 +245,93 @@ const LoginCard = ({
 )
 
 // Login form component
+interface LoginFormProps {
+  loginType: 'admin' | 'student'
+  email: string
+  studentId: string
+  password: string
+  setEmail: (value: string) => void
+  setStudentId: (value: string) => void
+  setPassword: (value: string) => void
+  handleSubmit: (e: React.FormEvent) => void
+  isLoading: boolean
+}
+
 const LoginForm = ({
+  loginType,
   email,
+  studentId,
   password,
   setEmail,
+  setStudentId,
   setPassword,
   handleSubmit,
   isLoading,
-}: LoginCardProps) => (
+}: LoginFormProps) => (
   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-    {/* Email Field */}
-    <div className="space-y-1 sm:space-y-2">
-      <label
-        htmlFor="email"
-        className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
-      >
-        Email Address
-      </label>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-          <EmailIcon />
+    {/* Conditional Field - Email for Admin/CR, Student ID for Student */}
+    {loginType === 'admin' ? (
+      <div className="space-y-1 sm:space-y-2">
+        <label
+          htmlFor="email"
+          className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Email Address
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+            <EmailIcon />
+          </div>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+            placeholder="Enter your email address"
+            required
+          />
         </div>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
-          placeholder="Enter your email address"
-          required
-        />
       </div>
-    </div>
+    ) : (
+      <div className="space-y-1 sm:space-y-2">
+        <label
+          htmlFor="studentId"
+          className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Student ID
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+            <svg
+              className="h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+              />
+            </svg>
+          </div>
+          <input
+            id="studentId"
+            type="text"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+            placeholder="Enter your Student ID (e.g., CSE-2021-001)"
+            required
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          💡 Default password is your Student ID
+        </p>
+      </div>
+    )}
 
     {/* Password Field */}
     <div className="space-y-1 sm:space-y-2">

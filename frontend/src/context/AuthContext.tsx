@@ -3,6 +3,7 @@ import {
   useGetProfileQuery,
   useLoginMutation,
   useLogoutMutation,
+  useStudentLoginMutation,
 } from '@/lib/apiSlice'
 import { clearCredentials, setCredentials } from '@/lib/authSlice'
 import type { RootState } from '@/lib/simpleStore'
@@ -17,6 +18,7 @@ interface AuthContextType {
   isLoggingOut: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<User>
+  studentLogin: (studentId: string, password: string) => Promise<User>
   logout: (redirectToLogin?: boolean) => Promise<void>
 }
 
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const [loginMutation] = useLoginMutation()
+  const [studentLoginMutation] = useStudentLoginMutation()
   const [logoutMutation] = useLogoutMutation()
 
   // Skip the profile query if no token
@@ -117,6 +120,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const studentLogin = async (studentId: string, password: string) => {
+    console.log('[AUTH CONTEXT] Student login function called for:', studentId)
+
+    try {
+      const result = await studentLoginMutation({ studentId, password }).unwrap()
+
+      if (result.success && result.data) {
+        console.log(
+          '[AUTH CONTEXT] Student login successful, setting credentials immediately'
+        )
+        dispatch(
+          setCredentials({
+            user: result.data.user,
+            accessToken: result.data.accessToken,
+          })
+        )
+        return result.data.user // Return user data for immediate use
+      }
+
+      throw new Error(result.message || 'Student login failed')
+    } catch (error) {
+      console.error('[AUTH CONTEXT] Student login failed:', error)
+      // Clear any stale credentials on login failure
+      dispatch(clearCredentials())
+      throw error
+    }
+  }
+
   const logout = async (redirectToLogin = true) => {
     console.log('[AUTH CONTEXT] Logout function called')
 
@@ -150,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoggingOut,
     isAuthenticated,
     login,
+    studentLogin,
     logout,
   }
 

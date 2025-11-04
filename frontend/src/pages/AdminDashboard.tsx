@@ -30,7 +30,7 @@ import { Textarea } from '@/components/ui/textarea'
 interface CreateUserForm {
   name: string
   email: string
-  role: 'admin' | 'cr' | 'instructor' | 'viewer'
+  role: 'admin' | 'cr' | 'instructor' | 'viewer' | 'student'
   sectionId?: string
   password: string
 }

@@ -7,17 +7,23 @@ import type {
     ApiResponse,
     AttendanceFilters,
     AttendanceRecord,
+    AttendanceSession,
     AttendanceStats,
+    CloseSessionRequest,
     Course,
     CreateAnnouncementRequest,
     CreateAttendanceRequest,
     CreateCourseRequest,
+    CreateQRSessionRequest,
     CreateSectionRequest,
     CreateStudentRequest,
     LoginRequest,
     LoginResponse,
     PaginatedResponse,
     PaginationQuery,
+    QRSessionHistory,
+    QRSessionStats,
+    ScanQRCodeRequest,
     Section,
     Student,
     UpdateAnnouncementRequest,
@@ -95,6 +101,13 @@ export const apiSlice = createApi({
         login: builder.mutation<ApiResponse<LoginResponse>, LoginRequest>({
             query: (credentials) => ({
                 url: '/auth/login',
+                method: 'POST',
+                body: credentials,
+            }),
+        }),
+        studentLogin: builder.mutation<ApiResponse<LoginResponse>, { studentId: string; password: string }>({
+            query: (credentials) => ({
+                url: '/auth/student/login',
                 method: 'POST',
                 body: credentials,
             }),
@@ -270,6 +283,10 @@ export const apiSlice = createApi({
             }),
             providesTags: ['AttendanceRecord'],
         }),
+        getStudentAttendance: builder.query<ApiResponse<AttendanceRecord[]>, string>({
+            query: (studentId) => `/attendance/student/${studentId}`,
+            providesTags: (_result, _error, studentId) => [{ type: 'AttendanceRecord', id: studentId }],
+        }),
         getAttendanceRecord: builder.query<ApiResponse<AttendanceRecord>, string>({
             query: (id) => `/attendance/${id}`,
             providesTags: (_result, _error, id) => [{ type: 'AttendanceRecord', id }],
@@ -410,12 +427,55 @@ export const apiSlice = createApi({
                 params,
             }),
         }),
+
+        // QR Code Attendance endpoints
+        generateQRSession: builder.mutation<ApiResponse<{ session: AttendanceSession; qrCode: string; expiresIn: number }>, CreateQRSessionRequest>({
+            query: (data) => ({
+                url: '/qr-attendance/generate',
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: ['AttendanceRecord'],
+        }),
+        scanQRCode: builder.mutation<ApiResponse<{ message: string; student: Student; session: Partial<AttendanceSession> }>, ScanQRCodeRequest>({
+            query: (data) => ({
+                url: '/qr-attendance/scan',
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: ['AttendanceRecord'],
+        }),
+        getActiveQRSession: builder.query<ApiResponse<AttendanceSession>, { sectionId: string; courseId: string }>({
+            query: ({ sectionId, courseId }) => ({
+                url: `/qr-attendance/active/${sectionId}/${courseId}`,
+            }),
+        }),
+        closeQRSession: builder.mutation<ApiResponse<{ session: AttendanceSession; attendanceRecord?: AttendanceRecord; stats: { totalScanned: number; sessionDuration: number } }>, { sessionId: string; data: CloseSessionRequest }>({
+            query: ({ sessionId, data }) => ({
+                url: `/qr-attendance/close/${sessionId}`,
+                method: 'PUT',
+                body: data,
+            }),
+            invalidatesTags: ['AttendanceRecord'],
+        }),
+        getQRSessionStats: builder.query<ApiResponse<QRSessionStats>, string>({
+            query: (sessionId) => ({
+                url: `/qr-attendance/stats/${sessionId}`,
+            }),
+        }),
+        getQRSessionHistory: builder.query<ApiResponse<QRSessionHistory>, { sectionId?: string; courseId?: string; from?: string; to?: string; page?: number; limit?: number }>({
+            query: (params) => ({
+                url: '/qr-attendance/history',
+                params,
+            }),
+        }),
     }),
 });
 
 export const {
     // Auth hooks
     useLoginMutation,
+    useStudentLoginMutation,
     useLogoutMutation,
     useRefreshTokenMutation,
     useGetProfileQuery,
@@ -447,6 +507,7 @@ export const {
 
     // Attendance hooks
     useGetAttendanceRecordsQuery,
+    useGetStudentAttendanceQuery,
     useGetAttendanceRecordQuery,
     useCreateAttendanceRecordMutation,
     useUpdateAttendanceRecordMutation,
@@ -471,4 +532,12 @@ export const {
     useUpdateAnnouncementMutation,
     useDeleteAnnouncementMutation,
     useGetAnnouncementStatsQuery,
+
+    // QR Attendance hooks
+    useGenerateQRSessionMutation,
+    useScanQRCodeMutation,
+    useGetActiveQRSessionQuery,
+    useCloseQRSessionMutation,
+    useGetQRSessionStatsQuery,
+    useGetQRSessionHistoryQuery,
 } = apiSlice;

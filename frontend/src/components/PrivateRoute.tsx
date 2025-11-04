@@ -10,7 +10,7 @@ import { Navigate } from 'react-router-dom'
 
 interface PrivateRouteProps {
   children: ReactNode
-  requiredRole?: 'admin' | 'cr' | 'instructor' | 'viewer'
+  requiredRole?: 'admin' | 'cr' | 'instructor' | 'viewer' | 'student'
 }
 
 export function PrivateRoute({ children, requiredRole }: PrivateRouteProps) {

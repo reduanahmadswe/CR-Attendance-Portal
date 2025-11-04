@@ -1,6 +1,7 @@
 import { PrivateRoute } from '@/components/PrivateRoute'
 import AdminDashboard from '@/pages/AdminDashboard'
 import { CRDashboard } from '@/pages/CRDashboard'
+import { StudentDashboard } from '@/pages/StudentDashboard'
 import { Navigate, Route } from 'react-router-dom'
 import { ROUTES } from './index'
 
@@ -23,6 +24,16 @@ export const DashboardRoutes = () => (
       element={
         <PrivateRoute requiredRole="cr">
           <CRDashboard />
+        </PrivateRoute>
+      }
+    />
+
+    {/* Student Dashboard */}
+    <Route
+      path={ROUTES.DASHBOARD.STUDENT}
+      element={
+        <PrivateRoute requiredRole="student">
+          <StudentDashboard />
         </PrivateRoute>
       }
     />

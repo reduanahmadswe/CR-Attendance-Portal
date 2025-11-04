@@ -35,12 +35,14 @@ export interface User {
     _id: string;
     name: string;
     email: string;
-    role: 'admin' | 'cr' | 'instructor' | 'viewer';
+    role: 'admin' | 'cr' | 'instructor' | 'viewer' | 'student';
     sectionId?: {
         _id: string;
         name: string;
         code?: string;
     } | string;
+    studentId?: string; // For student role
+    isPasswordDefault?: boolean; // For student role - indicates if password needs to be changed
     createdAt: string;
     updatedAt: string;
 }
@@ -226,4 +228,93 @@ export interface AnnouncementStats {
         count: number;
         emailsSent: number;
     }[];
+}
+
+// QR Code Attendance types
+export interface Location {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    radius?: number;
+}
+
+export interface AttendedStudent {
+    studentId: string | Student;
+    scannedAt: string;
+    location?: Location;
+    deviceInfo?: string;
+}
+
+export interface AttendanceSession {
+    _id: string;
+    sessionId: string;
+    sectionId: string | Section;
+    courseId: string | Course;
+    date: string;
+    startTime: string;
+    endTime: string;
+    qrCode: string;
+    qrCodeData: string;
+    location?: Location;
+    expiresAt: string;
+    isActive: boolean;
+    createdBy: string | User;
+    attendedStudents: AttendedStudent[];
+    maxDuration: number;
+    allowedRadius: number;
+    antiCheatEnabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateQRSessionRequest {
+    sectionId: string;
+    courseId: string;
+    duration?: number;
+    location?: Location;
+    allowedRadius?: number;
+    antiCheatEnabled?: boolean;
+}
+
+export interface ScanQRCodeRequest {
+    qrCodeData: string;
+    studentId: string;
+    location?: Location;
+    deviceInfo?: string;
+}
+
+export interface CloseSessionRequest {
+    generateAttendanceRecord?: boolean;
+}
+
+export interface QRSessionStats {
+    sessionInfo: {
+        sessionId: string;
+        course: Course;
+        section: Section;
+        startTime: string;
+        endTime: string;
+        isActive: boolean;
+    };
+    attendance: {
+        totalStudents: number;
+        attendedCount: number;
+        absentCount: number;
+        attendanceRate: number;
+    };
+    recentScans: Array<{
+        student: Student;
+        scannedAt: string;
+        location?: Location;
+    }>;
+}
+
+export interface QRSessionHistory {
+    sessions: AttendanceSession[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
 }
