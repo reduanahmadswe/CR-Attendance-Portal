@@ -323,7 +323,7 @@ const LoginForm = ({
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
             className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
-            placeholder="Enter your Student ID (e.g., CSE-2021-001)"
+            placeholder="Enter your Student ID (e.g., 232-35-000)"
             required
           />
         </div>

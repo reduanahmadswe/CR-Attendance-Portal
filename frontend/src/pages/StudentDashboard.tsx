@@ -1,4 +1,5 @@
 import { QRScanner } from '@/components/QRScanner';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,8 +22,9 @@ import {
   QrCode,
   User,
   XCircle,
+  KeyRound,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -47,12 +49,30 @@ export function StudentDashboard() {
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState<'scan' | 'history'>('scan');
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [hasShownPasswordPrompt, setHasShownPasswordPrompt] = useState(false);
 
   // Use authUser from context if available, fallback to Redux user
   const currentUser = authUser || user;
 
   // Get student ID
   const studentId = currentUser?._id || '';
+
+  // Check if this is first login (isPasswordDefault = true)
+  const isPasswordDefault = currentUser?.isPasswordDefault === true;
+
+  // Show password change modal on first login (only once per session)
+  useEffect(() => {
+    if (isPasswordDefault && !hasShownPasswordPrompt) {
+      setTimeout(() => {
+        setIsPasswordModalOpen(true);
+        setHasShownPasswordPrompt(true);
+        toast.info('Security এর জন্য আপনার password পরিবর্তন করুন!', {
+          duration: 5000,
+        });
+      }, 1000); // Show after 1 second delay
+    }
+  }, [isPasswordDefault, hasShownPasswordPrompt]);
 
   // Fetch student's attendance history
   const { data: attendanceResponse, isLoading: attendanceLoading } = useGetStudentAttendanceQuery(
@@ -190,6 +210,15 @@ export function StudentDashboard() {
               >
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Announcements</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="flex items-center gap-2 h-10 px-4"
+              >
+                <KeyRound className="h-4 w-4" />
+                <span className="hidden sm:inline">Change Password</span>
               </Button>
               <ThemeToggle />
               <Button
@@ -373,6 +402,13 @@ export function StudentDashboard() {
           )}
         </div>
       </main>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        isFirstLogin={isPasswordDefault}
+      />
     </div>
   );
 }
