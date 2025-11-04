@@ -264,27 +264,46 @@ export function QRGenerator({ sectionId, courses }: QRGeneratorProps) {
                 Students can scan this QR code to mark attendance
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* QR Code Image */}
-              <div className="flex justify-center">
-                <div className="relative inline-block">
-                  <img
-                    src={activeSession.qrCode}
-                    alt="Attendance QR Code"
-                    className="w-96 h-96 border-4 border-primary rounded-lg shadow-lg"
-                  />
-                  {/* Timer positioned outside QR code */}
+            <CardContent className="space-y-6">
+              {/* QR Code Display - Modern Card Design */}
+              <div className="flex flex-col items-center gap-6">
+                {/* QR Code Container with Border and Shadow */}
+                <div className="relative bg-white p-6 rounded-2xl shadow-2xl border-4 border-primary/20">
+                  {/* QR Code Image */}
+                  <div className="relative">
+                    <img
+                      src={activeSession.qrCode}
+                      alt="Attendance QR Code"
+                      className="w-80 h-80 sm:w-96 sm:h-96 rounded-xl"
+                    />
+                    {/* Decorative corner accents */}
+                    <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                    <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                    <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                  </div>
+                  
+                  {/* Timer Badge - Positioned below QR code */}
                   {getTimeRemaining() && (
-                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg">
-                      <Clock className="h-5 w-5" />
-                      {getTimeRemaining()}
+                    <div className="mt-6 flex justify-center">
+                      <div className="bg-gradient-to-r from-primary to-primary/80 text-white px-8 py-3 rounded-full font-bold text-xl flex items-center gap-3 shadow-lg animate-pulse">
+                        <Clock className="h-6 w-6" />
+                        <span className="tabular-nums">{getTimeRemaining()}</span>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Add spacing for timer */}
-              <div className="h-8"></div>
+                {/* Scan Instructions */}
+                <div className="text-center space-y-2 max-w-md">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    📱 Open your camera app and point it at the QR code
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Make sure you're within the allowed radius to mark attendance
+                  </p>
+                </div>
+              </div>
 
               {/* Session Info */}
               <div className="grid grid-cols-2 gap-4 text-sm">
