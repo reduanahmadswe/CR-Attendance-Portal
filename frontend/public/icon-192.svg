@@ -1,41 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
   <defs>
-    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#3B82F6"/>
       <stop offset="50%" style="stop-color:#6366F1"/>
       <stop offset="100%" style="stop-color:#8B5CF6"/>
     </linearGradient>
-    <linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="check" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#10B981"/>
       <stop offset="100%" style="stop-color:#059669"/>
     </linearGradient>
   </defs>
   
-  <!-- Background -->
-  <circle cx="96" cy="96" r="90" fill="url(#bg-grad)"/>
+  <!-- Full background - NO TRANSPARENT -->
+  <circle cx="96" cy="96" r="96" fill="url(#bg)"/>
+  
+  <!-- Glow -->
+  <circle cx="96" cy="96" r="85" fill="none" stroke="#FFF" stroke-width="0.5" opacity="0.2"/>
   
   <!-- Document -->
-  <rect x="60" y="50" width="72" height="94" rx="6" fill="#FFF" opacity="0.95"/>
+  <rect x="65" y="52" width="62" height="88" rx="8" fill="#FFF" opacity="0.95"/>
   
   <!-- Header -->
-  <rect x="60" y="50" width="72" height="24" rx="6" fill="#3B82F6" opacity="0.1"/>
+  <rect x="65" y="52" width="62" height="20" rx="8" fill="#3B82F6" opacity="0.1"/>
   
-  <!-- Checkboxes and lines -->
-  <g opacity="0.7">
-    <rect x="70" y="82" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
-    <path d="M72 87 L74 89 L78 85" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <line x1="85" y1="87" x2="120" y2="87" stroke="#6B7280" stroke-width="2"/>
-    
-    <rect x="70" y="98" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
-    <path d="M72 103 L74 105 L78 101" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <line x1="85" y1="103" x2="115" y2="103" stroke="#6B7280" stroke-width="2"/>
-    
-    <rect x="70" y="114" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
-    <path d="M72 119 L74 121 L78 117" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <line x1="85" y1="119" x2="118" y2="119" stroke="#6B7280" stroke-width="2"/>
+  <!-- University icon -->
+  <g transform="translate(96, 65)">
+    <circle r="5" fill="#3B82F6" opacity="0.2"/>
+    <path d="M-3.5,-1.5 L0,-3 L3.5,-1.5 L3.5,1 L0,2.5 L-3.5,1 Z" fill="#3B82F6"/>
   </g>
   
-  <!-- Large check badge -->
-  <circle cx="120" cy="128" r="18" fill="url(#check-grad)"/>
-  <path d="M112 128 L117 133 L128 122" stroke="#FFF" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Checkboxes -->
+  <g opacity="0.75">
+    <rect x="72" y="85" width="8" height="8" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M73.5 89 L75 90.5 L78.5 87" stroke="url(#check)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="83" y1="89" x2="118" y2="89" stroke="#9CA3AF" stroke-width="1.5"/>
+    
+    <rect x="72" y="98" width="8" height="8" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M73.5 102 L75 103.5 L78.5 100" stroke="url(#check)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="83" y1="102" x2="115" y2="102" stroke="#9CA3AF" stroke-width="1.5"/>
+    
+    <rect x="72" y="111" width="8" height="8" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M73.5 115 L75 116.5 L78.5 113" stroke="url(#check)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="83" y1="115" x2="117" y2="115" stroke="#9CA3AF" stroke-width="1.5"/>
+  </g>
+  
+  <!-- Check badge -->
+  <g transform="translate(115, 122)">
+    <circle r="16" fill="url(#check)"/>
+    <circle r="14.5" fill="none" stroke="#FFF" stroke-width="1.5"/>
+    <path d="M-7,0 L-2,5 L7,-4" stroke="#FFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Status dots -->
+  <circle cx="38" cy="68" r="4" fill="#10B981"/>
+  <circle cx="154" cy="68" r="4" fill="#F59E0B"/>
+  <circle cx="38" cy="124" r="4" fill="#EF4444"/>
+  
+  <!-- CR badge -->
+  <g transform="translate(130, 45)">
+    <rect x="-14" y="-7" width="28" height="14" rx="7" fill="#F59E0B"/>
+    <text x="0" y="2" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#FFF" text-anchor="middle">CR</text>
+  </g>
 </svg>

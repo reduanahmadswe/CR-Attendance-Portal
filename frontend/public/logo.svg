@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <!-- Main gradient for background -->
+    <!-- Main gradient for background - Full coverage -->
     <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
       <stop offset="50%" style="stop-color:#6366F1;stop-opacity:1" />
@@ -16,15 +16,15 @@
     <!-- Document gradient -->
     <linearGradient id="doc-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#F3F4F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F9FAFB;stop-opacity:1" />
     </linearGradient>
     
-    <!-- Shadow filter -->
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
-      <feOffset dx="0" dy="8" result="offsetblur"/>
+    <!-- Shadow -->
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
       <feComponentTransfer>
-        <feFuncA type="linear" slope="0.3"/>
+        <feFuncA type="linear" slope="0.2"/>
       </feComponentTransfer>
       <feMerge>
         <feMergeNode/>
@@ -33,67 +33,68 @@
     </filter>
   </defs>
   
-  <!-- Background circle with gradient -->
-  <circle cx="256" cy="256" r="240" fill="url(#bg-gradient)"/>
+  <!-- Full background circle - NO TRANSPARENT AREAS -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg-gradient)"/>
   
-  <!-- Inner circle for depth -->
-  <circle cx="256" cy="256" r="220" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.2"/>
+  <!-- Subtle inner glow -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.15"/>
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.1"/>
   
-  <!-- Document/Clipboard Base -->
+  <!-- Document Card with shadow -->
   <g filter="url(#shadow)">
-    <!-- Clipboard holder -->
-    <rect x="180" y="130" width="152" height="20" rx="8" fill="#E5E7EB"/>
+    <!-- Clipboard top -->
+    <rect x="200" y="140" width="112" height="16" rx="8" fill="#E5E7EB"/>
     
     <!-- Main document -->
-    <rect x="160" y="140" width="192" height="252" rx="12" fill="url(#doc-gradient)" stroke="#D1D5DB" stroke-width="3"/>
+    <rect x="180" y="150" width="152" height="212" rx="16" fill="url(#doc-gradient)"/>
     
-    <!-- Document header -->
-    <rect x="160" y="140" width="192" height="60" rx="12" fill="#3B82F6" opacity="0.1"/>
+    <!-- Document header bar -->
+    <rect x="180" y="150" width="152" height="50" rx="16" fill="#3B82F6" opacity="0.08"/>
     
-    <!-- Title icon (graduation cap) -->
-    <g transform="translate(240, 160)">
-      <path d="M 0,-10 L 10,0 L 0,10 L -10,0 Z" fill="#3B82F6"/>
-      <rect x="-2" y="8" width="4" height="8" fill="#3B82F6"/>
+    <!-- University icon -->
+    <g transform="translate(256, 170)">
+      <circle r="12" fill="#3B82F6" opacity="0.15"/>
+      <path d="M-8,-4 L0,-8 L8,-4 L8,2 L0,6 L-8,2 Z" fill="#3B82F6"/>
     </g>
     
-    <!-- Attendance list lines with checkboxes -->
-    <g opacity="0.6">
-      <!-- Line 1 with checkbox -->
-      <rect x="190" y="220" width="20" height="20" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
-      <path d="M194 230 L198 234 L206 226" stroke="url(#check-gradient)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="220" y1="230" x2="320" y2="230" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
+    <!-- Attendance checkboxes with items -->
+    <g opacity="0.75">
+      <!-- Item 1 -->
+      <rect x="200" y="210" width="18" height="18" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
+      <path d="M203 220 L207 224 L215 216" stroke="url(#check-gradient)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="225" y1="219" x2="305" y2="219" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round"/>
       
-      <!-- Line 2 with checkbox -->
-      <rect x="190" y="260" width="20" height="20" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
-      <path d="M194 270 L198 274 L206 266" stroke="url(#check-gradient)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="220" y1="270" x2="300" y2="270" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
+      <!-- Item 2 -->
+      <rect x="200" y="240" width="18" height="18" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
+      <path d="M203 250 L207 254 L215 246" stroke="url(#check-gradient)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="225" y1="249" x2="295" y2="249" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round"/>
       
-      <!-- Line 3 with checkbox -->
-      <rect x="190" y="300" width="20" height="20" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
-      <path d="M194 310 L198 314 L206 306" stroke="url(#check-gradient)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="220" y1="310" x2="310" y2="310" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
+      <!-- Item 3 -->
+      <rect x="200" y="270" width="18" height="18" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
+      <path d="M203 280 L207 284 L215 276" stroke="url(#check-gradient)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="225" y1="279" x2="300" y2="279" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round"/>
       
-      <!-- Line 4 (empty checkbox) -->
-      <rect x="190" y="340" width="20" height="20" rx="4" fill="none" stroke="#6B7280" stroke-width="2"/>
-      <line x1="220" y1="350" x2="280" y2="350" stroke="#6B7280" stroke-width="3" stroke-linecap="round"/>
+      <!-- Item 4 - unchecked -->
+      <rect x="200" y="300" width="18" height="18" rx="4" fill="none" stroke="#D1D5DB" stroke-width="2"/>
+      <line x1="225" y1="309" x2="285" y2="309" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round"/>
     </g>
-    
-    <!-- Large checkmark badge -->
-    <circle cx="320" cy="340" r="45" fill="url(#check-gradient)"/>
-    <circle cx="320" cy="340" r="42" fill="none" stroke="#FFFFFF" stroke-width="4"/>
-    <path d="M300 340 L312 352 L340 324" stroke="#FFFFFF" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   
-  <!-- Decorative elements - attendance status indicators -->
-  <g opacity="0.8">
-    <circle cx="120" cy="180" r="12" fill="#10B981"/>
-    <circle cx="392" cy="180" r="12" fill="#F59E0B"/>
-    <circle cx="120" cy="332" r="12" fill="#EF4444"/>
+  <!-- Large success badge -->
+  <g transform="translate(310, 310)">
+    <circle r="42" fill="url(#check-gradient)"/>
+    <circle r="39" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+    <path d="M-18,0 L-6,12 L18,-12" stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   
-  <!-- Bottom text badge -->
-  <g>
-    <rect x="180" y="420" width="152" height="36" rx="18" fill="#FFFFFF" opacity="0.95"/>
-    <text x="256" y="444" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#3B82F6" text-anchor="middle">CR PORTAL</text>
+  <!-- Status indicator dots -->
+  <circle cx="100" cy="180" r="10" fill="#10B981"/>
+  <circle cx="412" cy="180" r="10" fill="#F59E0B"/>
+  <circle cx="100" cy="332" r="10" fill="#EF4444"/>
+  
+  <!-- CR Badge at top -->
+  <g transform="translate(350, 120)">
+    <rect x="-35" y="-16" width="70" height="32" rx="16" fill="#F59E0B"/>
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">CR</text>
   </g>
 </svg>
