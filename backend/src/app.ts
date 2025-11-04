@@ -22,6 +22,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://diucrportal.vercel.app',
   'https://*.vercel.app', // Allow all vercel apps for testing
+  'https://cr-portal-backend.onrender.com',
   FRONTEND_URL,
 ].filter((origin, index, self) => self.indexOf(origin) === index); // Remove duplicates
 
@@ -49,10 +50,11 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
     
-    // Allow localhost and all vercel.app domains
+    // Allow localhost, all vercel.app domains, and all onrender.com domains
     if (
       origin.includes('localhost') || 
       origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com') ||
       allowedOrigins.includes(origin)
     ) {
       callback(null, true);
