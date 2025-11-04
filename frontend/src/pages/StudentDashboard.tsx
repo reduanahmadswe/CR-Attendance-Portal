@@ -123,13 +123,30 @@ export function StudentDashboard() {
     }
   };
 
-  // Calculate attendance statistics
+  // Calculate attendance statistics from API data
   const totalClasses = attendanceRecords.length;
+  
   const presentCount = attendanceRecords.filter((record: StudentAttendanceRecord) => {
     return record.attendance?.status === 'present';
   }).length;
-  const absentCount = totalClasses - presentCount;
-  const attendancePercentage = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
+  
+  const lateCount = attendanceRecords.filter((record: StudentAttendanceRecord) => {
+    return record.attendance?.status === 'late';
+  }).length;
+  
+  const excusedCount = attendanceRecords.filter((record: StudentAttendanceRecord) => {
+    return record.attendance?.status === 'excused';
+  }).length;
+  
+  const absentCount = attendanceRecords.filter((record: StudentAttendanceRecord) => {
+    return record.attendance?.status === 'absent';
+  }).length;
+  
+  // Calculate attendance percentage (present + late + excused counts as attended)
+  const attendedCount = presentCount + lateCount + excusedCount;
+  const attendancePercentage = totalClasses > 0 
+    ? Math.round((attendedCount / totalClasses) * 100) 
+    : 0;
 
   // QR Scan success handler
   const handleScanSuccess = () => {
@@ -247,10 +264,16 @@ export function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                    {totalClasses}
-                  </span>
-                  <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                  {attendanceLoading ? (
+                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {totalClasses}
+                      </span>
+                      <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400 opacity-50" />
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -263,10 +286,16 @@ export function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {presentCount}
-                  </span>
-                  <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
+                  {attendanceLoading ? (
+                    <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {presentCount}
+                      </span>
+                      <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400 opacity-50" />
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -279,10 +308,16 @@ export function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-bold text-red-600 dark:text-red-400">
-                    {absentCount}
-                  </span>
-                  <XCircle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
+                  {attendanceLoading ? (
+                    <div className="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        {absentCount}
+                      </span>
+                      <XCircle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -295,26 +330,32 @@ export function StudentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                    {attendancePercentage}%
-                  </span>
-                  <div className="relative">
-                    <svg className="h-8 w-8" viewBox="0 0 36 36">
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#e5e7eb"
-                        strokeWidth="3"
-                      />
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#9333ea"
-                        strokeWidth="3"
-                        strokeDasharray={`${attendancePercentage}, 100`}
-                      />
-                    </svg>
-                  </div>
+                  {attendanceLoading ? (
+                    <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                        {attendancePercentage}%
+                      </span>
+                      <div className="relative">
+                        <svg className="h-8 w-8" viewBox="0 0 36 36">
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#e5e7eb"
+                            strokeWidth="3"
+                          />
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#9333ea"
+                            strokeWidth="3"
+                            strokeDasharray={`${attendancePercentage}, 100`}
+                          />
+                        </svg>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
