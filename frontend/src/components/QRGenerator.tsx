@@ -267,20 +267,24 @@ export function QRGenerator({ sectionId, courses }: QRGeneratorProps) {
             <CardContent className="space-y-4">
               {/* QR Code Image */}
               <div className="flex justify-center">
-                <div className="relative">
+                <div className="relative inline-block">
                   <img
                     src={activeSession.qrCode}
                     alt="Attendance QR Code"
-                    className="w-80 h-80 border-4 border-primary rounded-lg"
+                    className="w-96 h-96 border-4 border-primary rounded-lg shadow-lg"
                   />
+                  {/* Timer positioned outside QR code */}
                   {getTimeRemaining() && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-full font-bold flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg">
+                      <Clock className="h-5 w-5" />
                       {getTimeRemaining()}
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Add spacing for timer */}
+              <div className="h-8"></div>
 
               {/* Session Info */}
               <div className="grid grid-cols-2 gap-4 text-sm">
