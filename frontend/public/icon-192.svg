@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="50%" style="stop-color:#6366F1"/>
+      <stop offset="100%" style="stop-color:#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="check-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="96" cy="96" r="90" fill="url(#bg-grad)"/>
+  
+  <!-- Document -->
+  <rect x="60" y="50" width="72" height="94" rx="6" fill="#FFF" opacity="0.95"/>
+  
+  <!-- Header -->
+  <rect x="60" y="50" width="72" height="24" rx="6" fill="#3B82F6" opacity="0.1"/>
+  
+  <!-- Checkboxes and lines -->
+  <g opacity="0.7">
+    <rect x="70" y="82" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M72 87 L74 89 L78 85" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <line x1="85" y1="87" x2="120" y2="87" stroke="#6B7280" stroke-width="2"/>
+    
+    <rect x="70" y="98" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M72 103 L74 105 L78 101" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <line x1="85" y1="103" x2="115" y2="103" stroke="#6B7280" stroke-width="2"/>
+    
+    <rect x="70" y="114" width="10" height="10" rx="2" fill="none" stroke="#6B7280" stroke-width="1"/>
+    <path d="M72 119 L74 121 L78 117" stroke="url(#check-grad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <line x1="85" y1="119" x2="118" y2="119" stroke="#6B7280" stroke-width="2"/>
+  </g>
+  
+  <!-- Large check badge -->
+  <circle cx="120" cy="128" r="18" fill="url(#check-grad)"/>
+  <path d="M112 128 L117 133 L128 122" stroke="#FFF" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>
