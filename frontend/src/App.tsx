@@ -1,5 +1,5 @@
-﻿import { ThemeProvider } from '@/components/theme-provider'
-import { AuthProvider } from '@/context/AuthContext'
+﻿import { AuthProvider } from '@/context/AuthContext'
+import { Navbar } from '@/components/Navbar'
 import {
   Navigate,
   Route,
@@ -40,14 +40,14 @@ function RedirectHandler() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="attendance-portal-theme">
-      <AuthProvider>
-        <Router
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
-          <RedirectHandler />
-          <Routes>
-            {/* Authentication Routes */}
+    <AuthProvider>
+      <Router
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <RedirectHandler />
+        <Navbar />
+        <Routes>
+          {/* Authentication Routes */}
             {AuthRoutes()}
 
             {/* Dashboard Routes */}
@@ -80,7 +80,6 @@ function App() {
           <Toaster />
         </Router>
       </AuthProvider>
-    </ThemeProvider>
   )
 }
 

@@ -4,13 +4,12 @@
  * A clean, modern login interface for the CR Attendance Portal.
  * Features:
  * - Role-based authentication with automatic dashboard redirection
- * - Responsive design with dark mode support
+ * - Responsive design
  * - Animated background elements
  * - Clean component architecture with separated concerns
  * - Proper loading states and error handling
  */
 
-import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -117,12 +116,7 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-2 sm:p-4 md:p-6 lg:p-8 pb-32 sm:pb-36 md:pb-40">
-      {/* Theme Toggle */}
-      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 md:top-6 md:right-6 z-10">
-        <ThemeToggle />
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-2 sm:p-4 md:p-6 lg:p-8 pb-32 sm:pb-36 md:pb-40">
       {/* Animated Background */}
       <BackgroundDecorations />
 
@@ -180,7 +174,7 @@ const LoginCard = ({
   handleSubmit,
   isLoading,
 }: LoginCardProps) => (
-  <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-2 sm:mx-4 shadow-2xl border-0 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
+  <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-2 sm:mx-4 shadow-2xl border-0 backdrop-blur-sm bg-white/80">
     <CardHeader className="space-y-2 pb-4 sm:pb-6 px-4 sm:px-6">
       {/* Logo */}
       <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 mb-2 sm:mb-4 relative">
@@ -197,21 +191,21 @@ const LoginCard = ({
       </CardTitle>
 
       {/* Description */}
-      <CardDescription className="text-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm md:text-base px-2">
+      <CardDescription className="text-center text-gray-600 text-xs sm:text-sm md:text-base px-2">
         Sign in to manage your class attendance records
       </CardDescription>
     </CardHeader>
 
     <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-4 sm:pb-6">
       {/* Login Type Tabs */}
-      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
         <button
           type="button"
           onClick={() => setLoginType('admin')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             loginType === 'admin'
-              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
           }`}
         >
           Admin/CR
@@ -221,8 +215,8 @@ const LoginCard = ({
           onClick={() => setLoginType('student')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             loginType === 'student'
-              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
           }`}
         >
           Student
@@ -274,7 +268,7 @@ const LoginForm = ({
       <div className="space-y-1 sm:space-y-2">
         <label
           htmlFor="email"
-          className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+          className="block text-xs sm:text-sm font-medium text-gray-700"
         >
           Email Address
         </label>
@@ -287,7 +281,7 @@ const LoginForm = ({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 bg-white rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
             placeholder="Enter your email address"
             required
           />
@@ -297,7 +291,7 @@ const LoginForm = ({
       <div className="space-y-1 sm:space-y-2">
         <label
           htmlFor="studentId"
-          className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+          className="block text-xs sm:text-sm font-medium text-gray-700"
         >
           Student ID
         </label>
@@ -322,12 +316,12 @@ const LoginForm = ({
             type="text"
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
-            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+            className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 bg-white rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
             placeholder="Enter your Student ID : 232-35-000"
             required
           />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           💡 Default password is your Student ID
         </p>
       </div>
@@ -337,7 +331,7 @@ const LoginForm = ({
     <div className="space-y-1 sm:space-y-2">
       <label
         htmlFor="password"
-        className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300"
+        className="block text-xs sm:text-sm font-medium text-gray-700"
       >
         Password
       </label>
@@ -350,7 +344,7 @@ const LoginForm = ({
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 bg-white rounded-lg text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
           placeholder="Enter your password"
           required
         />
@@ -382,20 +376,20 @@ const LoginForm = ({
 const FooterCredit = () => (
   <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 px-3 sm:px-4 md:px-6">
     <div className="max-w-xs sm:max-w-md md:max-w-2xl mx-auto">
-      <Card className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+      <Card className="bg-white/60 backdrop-blur-sm border border-gray-200/50 shadow-lg">
         <CardContent className="p-2 sm:p-3 md:p-4 text-center">
           <div className="space-y-1 sm:space-y-2">
-            <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium leading-tight">
+            <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 font-medium leading-tight">
               📚 Built for Class Representatives attendance management
             </p>
-            <p className="text-[9px] sm:text-xs text-gray-600 dark:text-gray-400 leading-relaxed hidden sm:block">
+            <p className="text-[9px] sm:text-xs text-gray-600 leading-relaxed hidden sm:block">
               This portal helps Class Representatives easily manage and track
               student attendance, replacing traditional paper-based systems.
             </p>
-            <div className="pt-1 sm:pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
-              <p className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-500 leading-tight">
+            <div className="pt-1 sm:pt-2 border-t border-gray-200/50">
+              <p className="text-[9px] sm:text-xs text-gray-500 leading-tight">
                 Created with ❤️ by{' '}
-                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                <span className="font-semibold text-blue-600">
                   Reduan Ahmad
                 </span>
                 <span className="hidden sm:inline">

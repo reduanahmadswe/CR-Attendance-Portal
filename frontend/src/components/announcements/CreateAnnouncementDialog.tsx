@@ -174,9 +174,9 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
         <div className="space-y-4 py-4">
           {/* Generated Text Message */}
           {generatedText && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold text-gray-900 dark:text-white">Generated Message</h4>
+                <h4 className="font-semibold text-gray-900">Generated Message</h4>
                 <Button variant="outline" size="sm" onClick={handleCopyText}>
                   {copied ? (
                     <>
@@ -191,7 +191,7 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
                   )}
                 </Button>
               </div>
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono bg-white dark:bg-gray-900 p-3 rounded border">
+              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono bg-white p-3 rounded border">
                 {generatedText}
               </pre>
               <p className="text-xs text-gray-500 mt-2">
@@ -202,25 +202,25 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
 
           {/* Email Status */}
           {emailStatus && (
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+            <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Mail className="w-5 h-5 text-green-600" />
-                <h4 className="font-semibold text-green-900 dark:text-green-100">Email Delivery Status</h4>
+                <h4 className="font-semibold text-green-900">Email Delivery Status</h4>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Successfully sent:</span>
+                  <span className="text-gray-700">Successfully sent:</span>
                   <span className="font-semibold text-green-600">{emailStatus.sent}</span>
                 </div>
                 {emailStatus.failed > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-700 dark:text-gray-300">Failed:</span>
+                    <span className="text-gray-700">Failed:</span>
                     <span className="font-semibold text-red-600">{emailStatus.failed}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Total recipients:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                  <span className="text-gray-700">Total recipients:</span>
+                  <span className="font-semibold text-gray-900">
                     {emailStatus.total}
                   </span>
                 </div>
@@ -313,8 +313,8 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
 
         {/* Conditional Details */}
         {showDetails && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-4">
-            <h4 className="font-semibold text-blue-900 dark:text-blue-100">Additional Details</h4>
+          <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+            <h4 className="font-semibold text-blue-900">Additional Details</h4>
 
             {/* Topic - For Quiz, Assignment, Presentation (optional) */}
             {(formData.type === 'quiz-1' || 
@@ -414,7 +414,7 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
         )}
 
         {/* Send Email Checkbox */}
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-4">
           <input
             type="checkbox"
             id="sendEmail"
@@ -437,11 +437,11 @@ const CreateAnnouncementDialog = ({ onClose }: CreateAnnouncementDialogProps) =>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 flex items-start gap-2">
+          <div className="bg-red-50 rounded-lg p-4 flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-red-900 dark:text-red-100">Failed to create announcement</p>
-              <p className="text-sm text-red-700 dark:text-red-200 mt-1">
+              <p className="font-semibold text-red-900">Failed to create announcement</p>
+              <p className="text-sm text-red-700 mt-1">
                 {(error as { data?: { error?: string } })?.data?.error || 'An error occurred. Please try again.'}
               </p>
             </div>

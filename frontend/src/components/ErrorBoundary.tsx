@@ -42,12 +42,12 @@ export class ErrorBoundary extends React.Component<
       }
 
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center p-6">
             <h2 className="text-xl font-semibold text-red-600 mb-4">
               Something went wrong
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 mb-4">
               An error occurred while rendering this component.
             </p>
             <Button onClick={this.resetError}>Try again</Button>

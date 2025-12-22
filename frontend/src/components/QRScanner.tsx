@@ -189,27 +189,27 @@ export function QRScanner({ studentId, onSuccess }: QRScannerProps) {
             <div
               className={`flex flex-col items-center justify-center h-64 rounded-lg ${
                 scanResult === 'success'
-                  ? 'bg-green-50 dark:bg-green-950'
-                  : 'bg-red-50 dark:bg-red-950'
+                  ? 'bg-green-50'
+                  : 'bg-red-50'
               }`}
             >
               {scanResult === 'success' ? (
                 <>
                   <CheckCircle className="h-20 w-20 text-green-600 mb-4" />
-                  <h3 className="text-xl font-bold text-green-700 dark:text-green-400">
+                  <h3 className="text-xl font-bold text-green-700">
                     Success!
                   </h3>
-                  <p className="text-center text-green-600 dark:text-green-500 mt-2 px-4">
+                  <p className="text-center text-green-600 mt-2 px-4">
                     {resultMessage}
                   </p>
                 </>
               ) : (
                 <>
                   <XCircle className="h-20 w-20 text-red-600 mb-4" />
-                  <h3 className="text-xl font-bold text-red-700 dark:text-red-400">
+                  <h3 className="text-xl font-bold text-red-700">
                     Failed
                   </h3>
-                  <p className="text-center text-red-600 dark:text-red-500 mt-2 px-4">
+                  <p className="text-center text-red-600 mt-2 px-4">
                     {resultMessage}
                   </p>
                 </>

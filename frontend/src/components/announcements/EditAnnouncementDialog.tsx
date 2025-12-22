@@ -207,8 +207,8 @@ const EditAnnouncementDialog = ({ announcement, onClose }: EditAnnouncementDialo
 
           {/* Conditional Details */}
           {showDetails && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-4">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100">Additional Details</h4>
+            <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+              <h4 className="font-semibold text-blue-900">Additional Details</h4>
 
               {/* Topic - For Quiz, Assignment, Presentation (optional) */}
               {(formData.type === 'quiz-1' || 
@@ -309,8 +309,8 @@ const EditAnnouncementDialog = ({ announcement, onClose }: EditAnnouncementDialo
 
           {/* Email Info */}
           {announcement.emailSent && (
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-green-800">
                 <Mail className="w-5 h-5" />
                 <p className="text-sm">
                   <strong>Note:</strong> Emails were already sent for this announcement. 
@@ -322,11 +322,11 @@ const EditAnnouncementDialog = ({ announcement, onClose }: EditAnnouncementDialo
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 flex items-start gap-2">
+            <div className="bg-red-50 rounded-lg p-4 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-red-900 dark:text-red-100">Failed to update announcement</p>
-                <p className="text-sm text-red-700 dark:text-red-200 mt-1">
+                <p className="font-semibold text-red-900">Failed to update announcement</p>
+                <p className="text-sm text-red-700 mt-1">
                   {(error as { data?: { error?: string } })?.data?.error || 'An error occurred. Please try again.'}
                 </p>
               </div>

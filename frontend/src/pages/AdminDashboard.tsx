@@ -1,4 +1,3 @@
-import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -77,14 +76,15 @@ import type {
 } from '@/types'
 import {
   BarChart3,
+  Bell,
   BookOpen,
   Building2,
+  Calendar,
   Download,
   Edit,
   FileText,
   GraduationCap,
   History,
-  LogOut,
   Plus,
   Shield,
   Trash2,
@@ -95,313 +95,253 @@ import { useForm } from 'react-hook-form'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useAuth } from '../context/AuthContext'
+
+// Quick Access Card Component
+interface QuickAccessCardProps {
+  icon: React.ReactNode;
+  label: string;
+  color: string;
+  bgColor: string;
+  onClick?: () => void;
+  isActive?: boolean;
+}
+
+const QuickAccessCard = ({ icon, label, color, bgColor, onClick, isActive }: QuickAccessCardProps) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center p-4 sm:p-6 bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-lg group ${
+      isActive ? `border-${color}-300 shadow-lg bg-${color}-50/30` : 'border-gray-100 shadow-sm hover:border-gray-200'
+    }`}
+  >
+    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${bgColor} flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300`}>
+      {icon}
+    </div>
+    <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">{label}</span>
+  </button>
+);
 
 function AdminDashboard() {
   const user = useSelector((state: RootState) => state.auth.user)
-  const auth = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<
-    'sections' | 'courses' | 'students' | 'users' | 'attendance'
-  >('sections')
-
-  const handleLogout = async () => {
-    console.log('[ADMIN DASHBOARD] Logout button clicked')
-
-    try {
-      if (auth?.logout) {
-        console.log('[ADMIN DASHBOARD] Calling auth.logout()')
-        await auth.logout() // This will handle redirect to login
-        console.log('[ADMIN DASHBOARD] auth.logout() completed')
-      } else {
-        console.log(
-          '[ADMIN DASHBOARD] auth.logout not available, fallback redirect'
-        )
-        window.location.href = '/auth/login'
-      }
-    } catch (error) {
-      console.error('[ADMIN DASHBOARD] Logout failed:', error)
-      // Still navigate to login even if logout fails
-      window.location.href = '/auth/login'
-    }
-  }
-
-  const handleNavigateToHistory = () => {
-    navigate('/reports/attendance-history')
-  }
+    'sections' | 'courses' | 'students' | 'users' | 'attendance' | null
+  >(null)
 
   if (!user || user.role !== 'admin') {
     return <div className="p-6">Unauthorized access. Admin role required.</div>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Stats Cards - Similar to MicroLearning */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8">
+          <AdminStatCard 
+            icon={<BarChart3 className="w-5 h-5 text-emerald-500" />}
+            label="TOTAL SECTIONS"
+            queryType="sections"
+            color="emerald"
+          />
+          <AdminStatCard 
+            icon={<BookOpen className="w-5 h-5 text-yellow-500" />}
+            label="COURSES"
+            queryType="courses"
+            color="yellow"
+          />
+          <AdminStatCard 
+            icon={<Users className="w-5 h-5 text-orange-500" />}
+            label="STUDENTS"
+            queryType="students"
+            color="orange"
+          />
+          <AdminStatCard 
+            icon={<Shield className="w-5 h-5 text-blue-500" />}
+            label="USERS"
+            queryType="users"
+            color="blue"
+          />
+          <AdminStatCard 
+            icon={<Calendar className="w-5 h-5 text-purple-500" />}
+            label="ATTENDANCE"
+            queryType="attendance"
+            color="purple"
+          />
+          <AdminStatCard 
+            icon={<GraduationCap className="w-5 h-5 text-cyan-500" />}
+            label="CRs"
+            queryType="crs"
+            color="cyan"
+          />
+        </div>
 
-      {/* Modern Header */}
-      <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-gray-200/20 dark:shadow-gray-900/20">
-        {/* Header gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-indigo-50/50 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-indigo-900/20"></div>
-
-        <div className="px-4 sm:px-6 lg:px-8 py-4 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            {/* User Info with enhanced styling */}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent animate-gradient">
-                  Admin Dashboard
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                  Welcome back,{' '}
-                  <span className="font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    {user.name}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            {/* Actions with enhanced styling */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNavigateToHistory}
-                className="flex items-center gap-2 h-10 px-4 border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 hover:border-purple-300 dark:hover:from-purple-900/30 dark:hover:to-indigo-900/30 dark:hover:border-purple-600 transition-all duration-300 shadow-sm hover:shadow-md backdrop-blur-sm"
-              >
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">
-                  View History
-                </span>
-              </Button>
-              <div className="p-1 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
-                <ThemeToggle />
-              </div>
-              <Button
-                size="sm"
-                onClick={handleLogout}
-                disabled={auth?.isLoggingOut}
-                className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">
-                  {auth?.isLoggingOut ? 'Logging out...' : 'Logout'}
-                </span>
-              </Button>
-            </div>
+        {/* Quick Access Section */}
+        <div className="mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Quick Access</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            <QuickAccessCard
+              icon={<GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />}
+              label="Sections"
+              color="blue"
+              bgColor="bg-blue-50"
+              onClick={() => setActiveTab(activeTab === 'sections' ? null : 'sections')}
+              isActive={activeTab === 'sections'}
+            />
+            <QuickAccessCard
+              icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />}
+              label="Courses"
+              color="green"
+              bgColor="bg-green-50"
+              onClick={() => setActiveTab(activeTab === 'courses' ? null : 'courses')}
+              isActive={activeTab === 'courses'}
+            />
+            <QuickAccessCard
+              icon={<Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />}
+              label="Students"
+              color="purple"
+              bgColor="bg-purple-50"
+              onClick={() => setActiveTab(activeTab === 'students' ? null : 'students')}
+              isActive={activeTab === 'students'}
+            />
+            <QuickAccessCard
+              icon={<Shield className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />}
+              label="Users"
+              color="orange"
+              bgColor="bg-orange-50"
+              onClick={() => setActiveTab(activeTab === 'users' ? null : 'users')}
+              isActive={activeTab === 'users'}
+            />
+            <QuickAccessCard
+              icon={<FileText className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-500" />}
+              label="Attendance"
+              color="cyan"
+              bgColor="bg-cyan-50"
+              onClick={() => setActiveTab(activeTab === 'attendance' ? null : 'attendance')}
+              isActive={activeTab === 'attendance'}
+            />
+            <QuickAccessCard
+              icon={<History className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" />}
+              label="History"
+              color="indigo"
+              bgColor="bg-indigo-50"
+              onClick={() => navigate('/reports/attendance-history')}
+            />
+            <QuickAccessCard
+              icon={<Bell className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500" />}
+              label="Announcements"
+              color="pink"
+              bgColor="bg-pink-50"
+              onClick={() => navigate('/announcements')}
+            />
+            <QuickAccessCard
+              icon={<Download className="w-5 h-5 sm:w-6 sm:h-6 text-teal-500" />}
+              label="Reports"
+              color="teal"
+              bgColor="bg-teal-50"
+              onClick={() => navigate('/reports/attendance-history')}
+            />
           </div>
         </div>
-      </header>
 
-      {/* Main Content with enhanced spacing and backdrop */}
-      <main className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-          {/* Quick Stats */}
-          <AdminStatsCards />
-
-          {/* Modern Navigation Tabs */}
-          <div className="mb-6 sm:mb-8">
-            <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-              <nav className="flex flex-wrap gap-1 sm:gap-2">
-                {[
-                  {
-                    id: 'sections',
-                    label: 'Sections',
-                    icon: GraduationCap,
-                    color: 'from-blue-500 to-cyan-500',
-                  },
-                  {
-                    id: 'courses',
-                    label: 'Courses',
-                    icon: BookOpen,
-                    color: 'from-green-500 to-emerald-500',
-                  },
-                  {
-                    id: 'students',
-                    label: 'Students',
-                    icon: Users,
-                    color: 'from-purple-500 to-pink-500',
-                  },
-                  {
-                    id: 'users',
-                    label: 'Users',
-                    icon: Shield,
-                    color: 'from-orange-500 to-red-500',
-                  },
-                  {
-                    id: 'attendance',
-                    label: 'Attendance',
-                    icon: FileText,
-                    color: 'from-indigo-500 to-blue-500',
-                  },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() =>
-                      setActiveTab(
-                        tab.id as
-                          | 'sections'
-                          | 'courses'
-                          | 'students'
-                          | 'users'
-                          | 'attendance'
-                      )
-                    }
-                    className={`flex items-center px-2 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 min-w-fit flex-1 sm:flex-none justify-center sm:justify-start ${
-                      activeTab === tab.id
-                        ? `bg-gradient-to-r ${tab.color} text-white shadow-lg hover:shadow-xl transform hover:scale-105`
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white/80 dark:hover:bg-gray-700/50 shadow-sm hover:shadow-md'
-                    }`}
-                  >
-                    <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" />
-                    <span className="hidden sm:inline ml-1 sm:ml-0">
-                      {tab.label}
-                    </span>
-                  </button>
-                ))}
-              </nav>
+        {/* Tab Content - Shows when a card is clicked */}
+        {activeTab && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 capitalize">{activeTab} Management</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Close
+              </Button>
             </div>
+            {activeTab === 'sections' && <SectionsManagement />}
+            {activeTab === 'courses' && <CoursesManagement />}
+            {activeTab === 'students' && <StudentsManagement />}
+            {activeTab === 'users' && <UsersManagement />}
+            {activeTab === 'attendance' && <AttendanceManagement />}
           </div>
-
-          {/* Tab Content */}
-          {activeTab === 'sections' && <SectionsManagement />}
-          {activeTab === 'courses' && <CoursesManagement />}
-          {activeTab === 'students' && <StudentsManagement />}
-          {activeTab === 'users' && <UsersManagement />}
-          {activeTab === 'attendance' && <AttendanceManagement />}
-        </div>
+        )}
       </main>
     </div>
   )
 }
 
-// Admin Stats Cards Component
-const AdminStatsCards = () => {
-  const { data: sectionsResponse, isLoading: sectionsLoading } =
-    useGetSectionsQuery({})
-  const { data: usersResponse, isLoading: usersLoading } = useGetUsersQuery({})
-  const { data: attendanceResponse, isLoading: attendanceLoading } =
-    useGetAttendanceRecordsQuery({})
+// Admin Stat Card Component
+interface AdminStatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  queryType: 'sections' | 'courses' | 'students' | 'users' | 'attendance' | 'crs';
+  color: string;
+}
 
-  const isLoading = sectionsLoading || usersLoading || attendanceLoading
+const AdminStatCard = ({ icon, label, queryType, color }: AdminStatCardProps) => {
+  const { data: sectionsResponse } = useGetSectionsQuery({})
+  const { data: usersResponse } = useGetUsersQuery({})
+  const { data: attendanceResponse } = useGetAttendanceRecordsQuery({})
 
   const sections = sectionsResponse?.data?.data || []
   const users = usersResponse?.data?.data || []
   const attendance = attendanceResponse?.data?.data || []
 
-  const stats = [
-    {
-      title: 'Total Sections',
-      value: sections.length,
-      icon: GraduationCap,
-      gradient: 'from-blue-500 to-cyan-500',
-      bgGradient: 'from-blue-50 to-cyan-50',
-      darkBgGradient: 'from-blue-900/40 to-cyan-900/40',
-      description: 'Active sections',
-    },
-    {
-      title: 'Total Users',
-      value: users.length,
-      icon: Users,
-      gradient: 'from-green-500 to-emerald-500',
-      bgGradient: 'from-green-50 to-emerald-50',
-      darkBgGradient: 'from-green-900/40 to-emerald-900/40',
-      description: 'Registered users',
-    },
-    {
-      title: 'Total Records',
-      value: attendance.length,
-      icon: BarChart3,
-      gradient: 'from-purple-500 to-pink-500',
-      bgGradient: 'from-purple-50 to-pink-50',
-      darkBgGradient: 'from-purple-900/40 to-pink-900/40',
-      description: 'Attendance records',
-    },
-    {
-      title: 'Active CRs',
-      value: users.filter((user) => user.role === 'cr').length,
-      icon: Shield,
-      gradient: 'from-orange-500 to-red-500',
-      bgGradient: 'from-orange-50 to-red-50',
-      darkBgGradient: 'from-orange-900/40 to-red-900/40',
-      description: 'Class representatives',
-    },
-  ]
+  let value = 0
+  switch (queryType) {
+    case 'sections':
+      value = sections.length
+      break
+    case 'courses':
+      // Count courses - sections might have course IDs in courses array
+      value = (sections as unknown[]).reduce((acc: number, s) => {
+        const section = s as { courses?: unknown[] }
+        return acc + (Array.isArray(section.courses) ? section.courses.length : 0)
+      }, 0)
+      break
+    case 'students':
+      // Count students - sections might have student IDs in students array  
+      value = (sections as unknown[]).reduce((acc: number, s) => {
+        const section = s as { students?: unknown[] }
+        return acc + (Array.isArray(section.students) ? section.students.length : 0)
+      }, 0)
+      break
+    case 'users':
+      value = users.length
+      break
+    case 'attendance':
+      value = attendance.length
+      break
+    case 'crs':
+      value = users.filter((u: User) => u.role === 'cr').length
+      break
+  }
 
-  // Loading skeleton component
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        {[1, 2, 3, 4].map((index) => (
-          <Card
-            key={index}
-            className="overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
-            style={{
-              animationDelay: `${index * 150}ms`,
-              animation: 'fadeInUp 0.8s ease-out forwards',
-            }}
-          >
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
-                  <div className="space-y-1">
-                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-3/4"></div>
-                    <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-1/2"></div>
-                    <div className="h-2 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-full"></div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )
+  const bgColors: Record<string, string> = {
+    emerald: 'bg-emerald-50 border-emerald-200',
+    yellow: 'bg-yellow-50 border-yellow-200',
+    orange: 'bg-orange-50 border-orange-200',
+    blue: 'bg-blue-50 border-blue-200',
+    purple: 'bg-purple-50 border-purple-200',
+    cyan: 'bg-cyan-50 border-cyan-200',
+  }
+
+  const textColors: Record<string, string> = {
+    emerald: 'text-emerald-600',
+    yellow: 'text-yellow-600',
+    orange: 'text-orange-600',
+    blue: 'text-blue-600',
+    purple: 'text-purple-600',
+    cyan: 'text-cyan-600',
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-      {stats.map((stat, index) => (
-        <Card
-          key={index}
-          className={`group overflow-hidden border border-gray-200/60 dark:border-gray-700/40 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} dark:bg-gradient-to-br dark:${stat.darkBgGradient} backdrop-blur-sm hover:border-gray-300/80 dark:hover:border-gray-600/60 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`}
-          style={{
-            animationDelay: `${index * 150}ms`,
-            animation: 'fadeInUp 0.8s ease-out forwards',
-          }}
-        >
-          <CardContent className="p-3 sm:p-4 relative z-10">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div
-                  className={`inline-flex p-2 sm:p-2.5 rounded-lg bg-gradient-to-r ${stat.gradient} shadow-md mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 group-hover:shadow-lg`}
-                >
-                  <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
-                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors duration-300">
-                  {stat.title}
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1 group-hover:scale-105 transition-transform duration-300">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                  {stat.description}
-                </p>
-              </div>
-
-              {/* Decorative corner element */}
-              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-white/20 to-transparent dark:from-gray-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className={`rounded-xl p-3 sm:p-4 border ${bgColors[color]}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="p-1.5 rounded-lg bg-white shadow-sm">
+          {icon}
+        </div>
+      </div>
+      <p className={`text-xl sm:text-2xl font-bold ${textColors[color]}`}>{value}</p>
+      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">{label}</p>
     </div>
   )
 }
@@ -465,7 +405,7 @@ const SectionsManagement = () => {
       <div className="fadeInUp">
         <div className="text-center py-16">
           <div className="w-16 h-16 mx-auto mb-4 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600">
             Loading sections...
           </p>
         </div>
@@ -476,20 +416,20 @@ const SectionsManagement = () => {
   return (
     <div className="fadeInUp">
       {/* Header Section */}
-      <div className="bg-gradient-to-br from-purple-50 via-purple-100 to-indigo-50 dark:from-purple-900/20 dark:via-purple-800/20 dark:to-indigo-900/20 rounded-xl p-6 mb-6 border border-purple-200 dark:border-purple-700/30 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-purple-50 via-purple-100 to-indigo-50 rounded-xl p-6 mb-6 border border-purple-200 backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
               🏫 Sections Management
             </h2>
-            <p className="text-purple-700 dark:text-purple-300 text-sm">
+            <p className="text-purple-700 text-sm">
               Create and manage different academic sections
             </p>
           </div>
 
           {/* Add Section Button */}
           <div className="flex flex-col space-y-1">
-            <label className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">
+            <label className="text-xs font-medium text-purple-700 uppercase tracking-wide">
               Actions
             </label>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -499,9 +439,9 @@ const SectionsManagement = () => {
                   Add Section
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-purple-200 dark:border-purple-700 max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 border-purple-200 max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-4">
-                  <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                     {editingSection ? 'Edit Section' : 'Add New Section'}
                   </DialogTitle>
                 </DialogHeader>
@@ -511,38 +451,38 @@ const SectionsManagement = () => {
                 >
                   <div className="space-y-3 sm:space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center">
                         🏷️ Section Name
                       </label>
                       <Input
                         {...register('name', { required: true })}
                         placeholder="e.g., CSE-3A"
-                        className="h-10 sm:h-12 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
+                        className="h-10 sm:h-12 bg-purple-50 border-purple-200 focus:border-purple-400 transition-colors"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center">
                         🔖 Section Code
                       </label>
                       <Input
                         {...register('code')}
                         placeholder="e.g., CSE3A"
-                        className="h-10 sm:h-12 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors"
+                        className="h-10 sm:h-12 bg-purple-50 border-purple-200 focus:border-purple-400 transition-colors"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center">
                         📝 Description
                       </label>
                       <Textarea
                         {...register('description')}
                         placeholder="Section description..."
-                        className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 transition-colors resize-none"
+                        className="bg-purple-50 border-purple-200 focus:border-purple-400 transition-colors resize-none"
                         rows={3}
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-purple-100 dark:border-purple-800">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-purple-100">
                     <Button
                       type="button"
                       variant="outline"
@@ -551,7 +491,7 @@ const SectionsManagement = () => {
                         setEditingSection(null)
                         reset()
                       }}
-                      className="w-full sm:flex-1 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                      className="w-full sm:flex-1 border-purple-200 text-purple-700 hover:bg-purple-50"
                     >
                       Cancel
                     </Button>
@@ -570,17 +510,17 @@ const SectionsManagement = () => {
       </div>
 
       {/* Content Section */}
-      <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border-purple-100 dark:border-purple-800 shadow-xl">
+      <Card className="backdrop-blur-sm bg-white/80 border-purple-100 shadow-xl">
         <CardContent className="p-6">
           {sections.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center">
                 <Building2 className="h-12 w-12 text-purple-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
                 No Sections Found
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+              <p className="text-gray-500 max-w-md mx-auto mb-6">
                 Create your first section to start organizing students and
                 courses.
               </p>
@@ -589,23 +529,23 @@ const SectionsManagement = () => {
             <>
               {/* Desktop Table View */}
               <div className="hidden lg:block">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-700/30 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-800/30 dark:to-indigo-800/30 border-purple-200 dark:border-purple-700/50">
-                        <TableHead className="font-bold text-purple-800 dark:text-purple-200">
+                      <TableRow className="bg-gradient-to-r from-purple-100 to-indigo-100 border-purple-200">
+                        <TableHead className="font-bold text-purple-800">
                           Section Name
                         </TableHead>
-                        <TableHead className="font-bold text-purple-800 dark:text-purple-200">
+                        <TableHead className="font-bold text-purple-800">
                           Code
                         </TableHead>
-                        <TableHead className="font-bold text-purple-800 dark:text-purple-200">
+                        <TableHead className="font-bold text-purple-800">
                           Description
                         </TableHead>
-                        <TableHead className="font-bold text-purple-800 dark:text-purple-200">
+                        <TableHead className="font-bold text-purple-800">
                           Created
                         </TableHead>
-                        <TableHead className="font-bold text-purple-800 dark:text-purple-200">
+                        <TableHead className="font-bold text-purple-800">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -614,21 +554,21 @@ const SectionsManagement = () => {
                       {sections.map((section) => (
                         <TableRow
                           key={section._id}
-                          className="bg-gradient-to-r from-purple-25 to-white dark:from-purple-950/10 dark:to-gray-900/50 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors duration-200 border-purple-100 dark:border-purple-800/30"
+                          className="bg-gradient-to-r from-purple-25 to-white hover:bg-purple-100 transition-colors duration-200 border-purple-100"
                         >
-                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
+                          <TableCell className="font-semibold text-gray-900">
                             <div className="flex items-center space-x-2">
                               <Building2 className="h-4 w-4 text-purple-500" />
                               <span>{section.name}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400 font-mono">
+                          <TableCell className="text-gray-600 font-mono">
                             {section.code || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                          <TableCell className="text-gray-600 max-w-xs truncate">
                             {section.description || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-500 dark:text-gray-500 text-sm">
+                          <TableCell className="text-gray-500 text-sm">
                             {new Date(section.createdAt).toLocaleDateString(
                               'en-US',
                               {
@@ -644,7 +584,7 @@ const SectionsManagement = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEdit(section)}
-                                className="border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+                                className="border-purple-200 text-purple-600 hover:bg-purple-50 transition-colors"
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
@@ -670,23 +610,23 @@ const SectionsManagement = () => {
                 {sections.map((section) => (
                   <div
                     key={section._id}
-                    className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-700/30 p-4 backdrop-blur-sm"
+                    className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200 p-4 backdrop-blur-sm"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <Building2 className="h-4 w-4 text-purple-500" />
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                          <h3 className="font-semibold text-gray-900 text-lg">
                             {section.name}
                           </h3>
                         </div>
                         {section.code && (
-                          <p className="text-sm font-mono text-purple-600 dark:text-purple-400 mb-1">
+                          <p className="text-sm font-mono text-purple-600 mb-1">
                             {section.code}
                           </p>
                         )}
                         {section.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                          <p className="text-sm text-gray-600 line-clamp-2">
                             {section.description}
                           </p>
                         )}
@@ -696,7 +636,7 @@ const SectionsManagement = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(section)}
-                          className="border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 p-2"
+                          className="border-purple-200 text-purple-600 hover:bg-purple-100 p-2"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -710,7 +650,7 @@ const SectionsManagement = () => {
                         </Button>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 border-t border-purple-200 dark:border-purple-700/30 pt-2">
+                    <div className="text-xs text-gray-500 border-t border-purple-200 pt-2">
                       Created:{' '}
                       {new Date(section.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -849,13 +789,13 @@ const CoursesManagement = () => {
   return (
     <div className="fadeInUp">
       {/* Header Section */}
-      <div className="bg-gradient-to-br from-orange-50 via-orange-100 to-yellow-50 dark:from-orange-900/20 dark:via-orange-800/20 dark:to-yellow-900/20 rounded-xl p-6 mb-6 border border-orange-200 dark:border-orange-700/30 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-orange-50 via-orange-100 to-yellow-50 rounded-xl p-6 mb-6 border border-orange-200 backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 dark:from-orange-400 dark:to-yellow-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
               📚 Courses Management
             </h2>
-            <p className="text-orange-700 dark:text-orange-300 text-sm">
+            <p className="text-orange-700 text-sm">
               Manage course assignments for different sections
             </p>
           </div>
@@ -863,14 +803,14 @@ const CoursesManagement = () => {
           {/* Section Selection */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <div className="flex flex-col space-y-1">
-              <label className="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+              <label className="text-xs font-medium text-orange-700 uppercase tracking-wide">
                 Select Section
               </label>
               <Select
                 value={selectedSection}
                 onValueChange={setSelectedSection}
               >
-                <SelectTrigger className="w-full sm:w-64 bg-white/70 dark:bg-gray-800/70 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 backdrop-blur-sm">
+                <SelectTrigger className="w-full sm:w-64 bg-white/70 border-orange-200 focus:border-orange-400 backdrop-blur-sm">
                   <SelectValue placeholder="Choose a section..." />
                 </SelectTrigger>
                 <SelectContent className="backdrop-blur-md">
@@ -901,9 +841,9 @@ const CoursesManagement = () => {
                       Add Course
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 dark:bg-gray-900/95 border-orange-200 dark:border-orange-700 max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="w-[95vw] max-w-md sm:max-w-lg backdrop-blur-md bg-white/95 border-orange-200 max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="pb-4">
-                      <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 dark:from-orange-400 dark:to-yellow-400 bg-clip-text text-transparent">
+                      <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
                         {editingCourse ? 'Edit Course' : 'Add New Course'}
                       </DialogTitle>
                     </DialogHeader>
@@ -913,37 +853,37 @@ const CoursesManagement = () => {
                     >
                       <div className="space-y-3 sm:space-y-4">
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                          <label className="text-sm font-semibold text-gray-700 flex items-center">
                             📖 Course Name
                           </label>
                           <Input
                             {...register('name', { required: true })}
                             placeholder="e.g., Advanced Mathematics"
-                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 border-orange-200 focus:border-orange-400 transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                          <label className="text-sm font-semibold text-gray-700 flex items-center">
                             🏷️ Course Code
                           </label>
                           <Input
                             {...register('code')}
                             placeholder="e.g., MATH301"
-                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 border-orange-200 focus:border-orange-400 transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                          <label className="text-sm font-semibold text-gray-700 flex items-center">
                             📅 Semester
                           </label>
                           <Input
                             {...register('semester')}
                             placeholder="e.g., Spring 2025"
-                            className="h-10 sm:h-12 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+                            className="h-10 sm:h-12 bg-orange-50 border-orange-200 focus:border-orange-400 transition-colors"
                           />
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-orange-100 dark:border-orange-800">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-orange-100">
                         <Button
                           type="button"
                           variant="outline"
@@ -952,7 +892,7 @@ const CoursesManagement = () => {
                             setEditingCourse(null)
                             reset()
                           }}
-                          className="w-full sm:flex-1 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                          className="w-full sm:flex-1 border-orange-200 text-orange-700 hover:bg-orange-50"
                         >
                           Cancel
                         </Button>
@@ -973,17 +913,17 @@ const CoursesManagement = () => {
       </div>
 
       {/* Content Section */}
-      <Card className="backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border-orange-100 dark:border-orange-800 shadow-xl">
+      <Card className="backdrop-blur-sm bg-white/80 border-orange-100 shadow-xl">
         <CardContent className="p-6">
           {!selectedSection ? (
             <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center">
                 <BookOpen className="h-12 w-12 text-orange-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
                 Select a Section
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              <p className="text-gray-500 max-w-md mx-auto">
                 Choose a section from the dropdown above to view and manage
                 courses for that specific section.
               </p>
@@ -991,19 +931,19 @@ const CoursesManagement = () => {
           ) : isLoading ? (
             <div className="text-center py-16">
               <div className="w-16 h-16 mx-auto mb-4 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600">
                 Loading courses...
               </p>
             </div>
           ) : courses.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center">
                 <BookOpen className="h-12 w-12 text-orange-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
                 No Courses Found
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+              <p className="text-gray-500 max-w-md mx-auto mb-6">
                 This section doesn't have any courses yet. Click the "Add
                 Course" button to create the first course.
               </p>
@@ -1012,23 +952,23 @@ const CoursesManagement = () => {
             <>
               {/* Desktop Table View */}
               <div className="hidden lg:block">
-                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-lg border border-orange-200 dark:border-orange-700/30 overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-800/30 dark:to-yellow-800/30 border-orange-200 dark:border-orange-700/50">
-                        <TableHead className="font-bold text-orange-800 dark:text-orange-200">
+                      <TableRow className="bg-gradient-to-r from-orange-100 to-yellow-100 border-orange-200">
+                        <TableHead className="font-bold text-orange-800">
                           Course Name
                         </TableHead>
-                        <TableHead className="font-bold text-orange-800 dark:text-orange-200">
+                        <TableHead className="font-bold text-orange-800">
                           Code
                         </TableHead>
-                        <TableHead className="font-bold text-orange-800 dark:text-orange-200">
+                        <TableHead className="font-bold text-orange-800">
                           Semester
                         </TableHead>
-                        <TableHead className="font-bold text-orange-800 dark:text-orange-200">
+                        <TableHead className="font-bold text-orange-800">
                           Created
                         </TableHead>
-                        <TableHead className="font-bold text-orange-800 dark:text-orange-200">
+                        <TableHead className="font-bold text-orange-800">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -1037,21 +977,21 @@ const CoursesManagement = () => {
                       {courses.map((course) => (
                         <TableRow
                           key={course._id}
-                          className="bg-gradient-to-r from-orange-25 to-white dark:from-orange-950/10 dark:to-gray-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors duration-200 border-orange-100 dark:border-orange-800/30"
+                          className="bg-gradient-to-r from-orange-25 to-white hover:bg-orange-100 transition-colors duration-200 border-orange-100"
                         >
-                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
+                          <TableCell className="font-semibold text-gray-900">
                             <div className="flex items-center space-x-2">
                               <BookOpen className="h-4 w-4 text-orange-500" />
                               <span>{course.name}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400 font-mono">
+                          <TableCell className="text-gray-600 font-mono">
                             {course.code || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400">
+                          <TableCell className="text-gray-600">
                             {course.semester || '-'}
                           </TableCell>
-                          <TableCell className="text-gray-500 dark:text-gray-500 text-sm">
+                          <TableCell className="text-gray-500 text-sm">
                             {new Date(course.createdAt).toLocaleDateString(
                               'en-US',
                               {
@@ -1068,7 +1008,7 @@ const CoursesManagement = () => {
                                 variant="outline"
                                 onClick={() => handleDownloadAllAttendance(course._id, course.name)}
                                 disabled={downloadingCourseId === course._id}
-                                className="border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                className="border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
                                 title="Download all attendance records for this course"
                               >
                                 {downloadingCourseId === course._id ? (
@@ -1081,7 +1021,7 @@ const CoursesManagement = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEdit(course)}
-                                className="border-orange-200 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
+                                className="border-orange-200 text-orange-600 hover:bg-orange-50 transition-colors"
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
@@ -1107,23 +1047,23 @@ const CoursesManagement = () => {
                 {courses.map((course) => (
                   <div
                     key={course._id}
-                    className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-lg border border-orange-200 dark:border-orange-700/30 p-4 backdrop-blur-sm"
+                    className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg border border-orange-200 p-4 backdrop-blur-sm"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <BookOpen className="h-4 w-4 text-orange-500" />
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                          <h3 className="font-semibold text-gray-900 text-lg">
                             {course.name}
                           </h3>
                         </div>
                         {course.code && (
-                          <p className="text-sm font-mono text-orange-600 dark:text-orange-400 mb-1">
+                          <p className="text-sm font-mono text-orange-600 mb-1">
                             {course.code}
                           </p>
                         )}
                         {course.semester && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <p className="text-sm text-gray-600">
                             {course.semester}
                           </p>
                         )}
@@ -1134,7 +1074,7 @@ const CoursesManagement = () => {
                           variant="outline"
                           onClick={() => handleDownloadAllAttendance(course._id, course.name)}
                           disabled={downloadingCourseId === course._id}
-                          className="border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 p-2"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-100 p-2"
                           title="Download all attendance"
                         >
                           {downloadingCourseId === course._id ? (
@@ -1147,7 +1087,7 @@ const CoursesManagement = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(course)}
-                          className="border-orange-200 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 p-2"
+                          className="border-orange-200 text-orange-600 hover:bg-orange-100 p-2"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -1161,7 +1101,7 @@ const CoursesManagement = () => {
                         </Button>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 border-t border-orange-200 dark:border-orange-700/30 pt-2">
+                    <div className="text-xs text-gray-500 border-t border-orange-200 pt-2">
                       Created:{' '}
                       {new Date(course.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -1274,17 +1214,17 @@ const StudentsManagement = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 dark:border-gray-700/40 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-gray-800/10 opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-indigo-800 dark:from-white dark:via-purple-200 dark:to-indigo-200 bg-clip-text text-transparent mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-indigo-800 bg-clip-text text-transparent mb-2">
                 👥 Students Management
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">
+              <p className="text-gray-600 text-sm sm:text-base font-medium">
                 Add, edit, and manage student enrollments with course
                 assignments
               </p>
@@ -1293,22 +1233,22 @@ const StudentsManagement = () => {
             {/* Section Selection and Add Button */}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center w-full lg:w-auto">
               <div className="flex-1 lg:flex-none">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   🏫 Select Section
                 </label>
                 <Select
                   value={selectedSection}
                   onValueChange={setSelectedSection}
                 >
-                  <SelectTrigger className="w-full sm:w-64 h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 shadow-lg">
+                  <SelectTrigger className="w-full sm:w-64 h-12 bg-white/80 border-gray-200/60 hover:border-purple-300 transition-all duration-300 shadow-lg">
                     <SelectValue placeholder="Choose a section..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/40">
+                  <SelectContent className="bg-white/95 backdrop-blur-sm border-gray-200/60">
                     {sections.map((section) => (
                       <SelectItem
                         key={section._id}
                         value={section._id}
-                        className="hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer"
+                        className="hover:bg-purple-50 cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
@@ -1342,7 +1282,7 @@ const StudentsManagement = () => {
                         <span className="font-semibold">Add Student</span>
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
+                    <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border border-gray-200/60">
                       <DialogHeader className="pb-4 sm:pb-6">
                         <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                           {editingStudent
@@ -1356,52 +1296,52 @@ const StudentsManagement = () => {
                         className="space-y-4 sm:space-y-6"
                       >
                         {/* Student Basic Info */}
-                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-6 border border-blue-200/40 dark:border-blue-700/40">
-                          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center gap-2">
+                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200/40">
+                          <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
                             👤 Student Information
                           </h3>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 🆔 Student ID
                               </label>
                               <Input
                                 {...register('studentId', { required: true })}
                                 placeholder="e.g., 232-35-016"
-                                className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                                className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 👨‍🎓 Full Name
                               </label>
                               <Input
                                 {...register('name', { required: true })}
                                 placeholder="Student full name"
-                                className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                                className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                               />
                             </div>
                           </div>
 
                           <div className="mt-4">
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
                               📧 Email Address
                             </label>
                             <Input
                               {...register('email', { required: true })}
                               type="email"
                               placeholder="student@university.edu"
-                              className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                              className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                             />
                           </div>
                         </div>
 
                         {/* Course Selection */}
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 sm:p-6 border border-green-200/40 dark:border-green-700/40">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 sm:p-6 border border-green-200/40">
                           <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center mb-4">
-                            <h3 className="text-base sm:text-lg font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-green-800 flex items-center gap-2">
                               📚 Course Selection
                             </h3>
 
@@ -1412,7 +1352,7 @@ const StudentsManagement = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={selectAllCourses}
-                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
+                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-green-600 border-green-300 hover:bg-green-50"
                                 >
                                   ✅ Select All
                                 </Button>
@@ -1421,7 +1361,7 @@ const StudentsManagement = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={clearAllCourses}
-                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                                  className="text-xs sm:text-sm flex-1 sm:flex-initial h-8 sm:h-9 text-red-600 border-red-300 hover:bg-red-50"
                                 >
                                   ❌ Clear All
                                 </Button>
@@ -1429,7 +1369,7 @@ const StudentsManagement = () => {
                             )}
                           </div>
 
-                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-2 sm:p-4 max-h-72 sm:max-h-80 overflow-y-auto border border-green-200/60 dark:border-green-700/40">
+                          <div className="bg-white/60 rounded-lg p-2 sm:p-4 max-h-72 sm:max-h-80 overflow-y-auto border border-green-200/60">
                             {courses.length > 0 ? (
                               <div className="grid grid-cols-1 gap-2 sm:gap-3">
                                 {courses.map((course) => (
@@ -1437,8 +1377,8 @@ const StudentsManagement = () => {
                                     key={course._id}
                                     className={`flex items-center p-2 sm:p-3 rounded-lg border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${
                                       selectedCourses.includes(course._id)
-                                        ? 'border-green-400 bg-green-50 dark:border-green-500 dark:bg-green-900/30'
-                                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-700/50 hover:border-green-300 dark:hover:border-green-600'
+                                        ? 'border-green-400 bg-green-50'
+                                        : 'border-gray-200 bg-white hover:border-green-300'
                                     }`}
                                     onClick={() => toggleCourse(course._id)}
                                   >
@@ -1449,23 +1389,23 @@ const StudentsManagement = () => {
                                         course._id
                                       )}
                                       onChange={() => toggleCourse(course._id)}
-                                      className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700"
+                                      className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500"
                                     />
                                     <label
                                       htmlFor={course._id}
                                       className="ml-2 sm:ml-3 flex-1 cursor-pointer"
                                     >
                                       <div className="flex flex-col space-y-1 sm:space-y-0 sm:flex-row sm:items-center sm:gap-2">
-                                        <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                                        <span className="text-sm sm:text-base font-semibold text-gray-900 leading-tight">
                                           {course.name}
                                         </span>
-                                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-full font-medium inline-block w-fit">
+                                        <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium inline-block w-fit">
                                           {course.code}
                                         </span>
                                       </div>
                                     </label>
                                     {selectedCourses.includes(course._id) && (
-                                      <div className="ml-1 sm:ml-2 text-green-600 dark:text-green-400 text-sm sm:text-base">
+                                      <div className="ml-1 sm:ml-2 text-green-600 text-sm sm:text-base">
                                         ✅
                                       </div>
                                     )}
@@ -1477,10 +1417,10 @@ const StudentsManagement = () => {
                                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                                   📚
                                 </div>
-                                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
+                                <p className="text-sm sm:text-base text-gray-500 font-medium">
                                   No courses available for this section
                                 </p>
-                                <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-1">
+                                <p className="text-xs sm:text-sm text-gray-400 mt-1">
                                   Please add courses to this section first
                                 </p>
                               </div>
@@ -1488,16 +1428,16 @@ const StudentsManagement = () => {
                           </div>
 
                           {/* Course Selection Summary */}
-                          <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-green-200/60 dark:border-green-700/40">
+                          <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-white/60 rounded-lg border border-green-200/60">
                             <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                              <span className="text-xs sm:text-sm font-medium text-gray-700">
                                 Selected Courses:
                               </span>
                               <span
                                 className={`text-xs sm:text-sm font-bold px-2 sm:px-3 py-1 rounded-full text-center ${
                                   selectedCourses.length > 0
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
-                                    : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
                                 }`}
                               >
                                 {selectedCourses.length} / {courses.length}
@@ -1505,7 +1445,7 @@ const StudentsManagement = () => {
                             </div>
                             {selectedCourses.length === 0 &&
                               courses.length > 0 && (
-                                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+                                <p className="text-xs sm:text-sm text-red-600 mt-2 flex items-center gap-1">
                                   ⚠️ Please select at least one course
                                 </p>
                               )}
@@ -1513,7 +1453,7 @@ const StudentsManagement = () => {
                         </div>
 
                         {/* Form Actions */}
-                        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200/60 dark:border-gray-700/40">
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200/60">
                           <Button
                             type="button"
                             variant="outline"
@@ -1523,7 +1463,7 @@ const StudentsManagement = () => {
                               setSelectedCourses([])
                               reset()
                             }}
-                            className="order-2 sm:order-1 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50"
+                            className="order-2 sm:order-1 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base border-gray-300 hover:bg-gray-50"
                           >
                             Cancel
                           </Button>
@@ -1550,42 +1490,42 @@ const StudentsManagement = () => {
       </div>
       {/* Students Table Section */}
       {!selectedSection ? (
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-12 shadow-lg border border-gray-200/50 dark:border-gray-700/50 text-center">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-12 shadow-lg border border-gray-200/50 text-center">
           <div className="w-20 h-20 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-6">
             🏫
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+          <h3 className="text-xl font-bold text-gray-900 mb-3">
             Select a Section First
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+          <p className="text-gray-600 max-w-md mx-auto">
             Please choose a section from the dropdown above to view and manage
             students for that section.
           </p>
         </div>
       ) : isLoading ? (
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           <div className="p-6 space-y-4">
             {[1, 2, 3, 4, 5].map((index) => (
               <div key={index} className="flex items-center space-x-4 py-3">
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-24"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse flex-1"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-32"></div>
-                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-20"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-24"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse flex-1"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-32"></div>
+                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-20"></div>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           {students.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 👥
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 No Students Found
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 mb-6">
                 This section doesn't have any students yet. Add some students to
                 get started.
               </p>
@@ -1609,7 +1549,7 @@ const StudentsManagement = () => {
                 {students.map((student, index) => (
                   <div
                     key={student._id}
-                    className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 rounded-xl p-4 shadow-lg border border-gray-200/60 dark:border-gray-700/40 hover:shadow-xl transition-all duration-300"
+                    className="bg-gradient-to-br from-white to-gray-50/50 rounded-xl p-4 shadow-lg border border-gray-200/60 hover:shadow-xl transition-all duration-300"
                     style={{
                       animationDelay: `${index * 100}ms`,
                       animation: 'fadeInUp 0.6s ease-out forwards',
@@ -1621,10 +1561,10 @@ const StudentsManagement = () => {
                           {student.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                          <h3 className="font-semibold text-gray-900">
                             {student.name}
                           </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-gray-500">
                             {student.studentId}
                           </p>
                         </div>
@@ -1634,7 +1574,7 @@ const StudentsManagement = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(student)}
-                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -1651,27 +1591,27 @@ const StudentsManagement = () => {
 
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-gray-500">
                           📧
                         </span>
-                        <span className="text-gray-900 dark:text-gray-100">
+                        <span className="text-gray-900">
                           {student.email}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-gray-500">
                           📅
                         </span>
-                        <span className="text-gray-900 dark:text-gray-100">
+                        <span className="text-gray-900">
                           {new Date(student.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       {student.courses && student.courses.length > 0 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="text-gray-500">
                             📚
                           </span>
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <span className="text-sm text-gray-700">
                             {student.courses.length} course
                             {student.courses.length !== 1 ? 's' : ''}
                           </span>
@@ -1686,23 +1626,23 @@ const StudentsManagement = () => {
               <div className="hidden lg:block overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 border-b border-gray-200/60 dark:border-gray-600/40">
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100 py-4">
+                    <TableRow className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
+                      <TableHead className="font-bold text-gray-900 py-4">
                         🆔 Student ID
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         👨‍🎓 Name
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         📧 Email
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         📚 Courses
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         📅 Created
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                      <TableHead className="font-bold text-gray-900 text-center">
                         ⚙️ Actions
                       </TableHead>
                     </TableRow>
@@ -1711,10 +1651,10 @@ const StudentsManagement = () => {
                     {students.map((student, index) => (
                       <TableRow
                         key={student._id}
-                        className={`hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all duration-300 border-b border-gray-100/60 dark:border-gray-700/40 ${
+                        className={`hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 transition-all duration-300 border-b border-gray-100/60 ${
                           index % 2 === 0
-                            ? 'bg-white/40 dark:bg-gray-800/40'
-                            : 'bg-gray-50/40 dark:bg-gray-900/40'
+                            ? 'bg-white/40'
+                            : 'bg-gray-50/40'
                         }`}
                         style={{
                           animationDelay: `${index * 100}ms`,
@@ -1735,17 +1675,17 @@ const StudentsManagement = () => {
                             {student.name}
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-600 dark:text-gray-300">
+                        <TableCell className="text-gray-600">
                           {student.email}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/40 dark:to-emerald-900/40 dark:text-green-200">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
                               {student.courses?.length || 0} courses
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-600 dark:text-gray-300">
+                        <TableCell className="text-gray-600">
                           {new Date(student.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
@@ -1754,7 +1694,7 @@ const StudentsManagement = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => handleEdit(student)}
-                              className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20 transition-all duration-200"
+                              className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -1888,17 +1828,17 @@ const UsersManagement = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 dark:border-gray-700/40 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-gray-800/10 opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-800 dark:from-white dark:via-indigo-200 dark:to-purple-200 bg-clip-text text-transparent mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent mb-2">
                 👥 Users Management
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">
+              <p className="text-gray-600 text-sm sm:text-base font-medium">
                 Create and manage user accounts with role-based access control
               </p>
             </div>
@@ -1935,7 +1875,7 @@ const UsersManagement = () => {
                   <span className="font-semibold">Add New User</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/40">
+              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border border-gray-200/60">
                 <DialogHeader className="pb-4 sm:pb-6">
                   <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     {editingUser ? '✏️ Edit User' : '➕ Add New User'}
@@ -1947,59 +1887,59 @@ const UsersManagement = () => {
                   className="space-y-4 sm:space-y-6"
                 >
                   {/* User Basic Info */}
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4 sm:p-6 border border-blue-200/40 dark:border-blue-700/40">
-                    <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 sm:p-6 border border-blue-200/40">
+                    <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
                       👤 User Information
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           👨‍💼 Full Name
                         </label>
                         <Input
                           {...register('name', { required: true })}
                           placeholder="Enter full name"
-                          className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                          className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           📧 Email Address
                         </label>
                         <Input
                           {...register('email', { required: true })}
                           type="email"
                           placeholder="user@university.edu"
-                          className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                          className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                         />
                       </div>
                     </div>
 
                     {!editingUser && (
                       <div className="mt-4">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           🔒 Password
                         </label>
                         <Input
                           {...register('password', { required: !editingUser })}
                           type="password"
                           placeholder="Create a secure password"
-                          className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all duration-300"
+                          className="h-12 bg-white/80 border-gray-200/60 focus:border-blue-400 transition-all duration-300"
                         />
                       </div>
                     )}
                   </div>
 
                   {/* Role Selection */}
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 border border-purple-200/40 dark:border-purple-700/40">
-                    <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-4 flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200/40">
+                    <h3 className="text-lg font-semibold text-purple-800 mb-4 flex items-center gap-2">
                       🎭 Role & Permissions
                     </h3>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
                         Select User Role
                       </label>
                       <Select
@@ -2011,10 +1951,10 @@ const UsersManagement = () => {
                           )
                         }
                       >
-                        <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+                        <SelectTrigger className="h-12 bg-white/80 border-gray-200/60 hover:border-purple-300 transition-all duration-300">
                           <SelectValue placeholder="Choose a role..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/40">
+                        <SelectContent className="bg-white/95 backdrop-blur-sm border-gray-200/60">
                           {[
                             {
                               value: 'admin',
@@ -2044,7 +1984,7 @@ const UsersManagement = () => {
                             <SelectItem
                               key={role.value}
                               value={role.value}
-                              className="hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer py-3"
+                              className="hover:bg-purple-50 cursor-pointer py-3"
                             >
                               <div className="flex items-center gap-3">
                                 <span className="text-lg">{role.icon}</span>
@@ -2052,7 +1992,7 @@ const UsersManagement = () => {
                                   <div className="font-semibold">
                                     {role.label}
                                   </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  <div className="text-xs text-gray-500">
                                     {role.desc}
                                   </div>
                                 </div>
@@ -2065,16 +2005,16 @@ const UsersManagement = () => {
 
                     {/* Role Description */}
                     {selectedRole && (
-                      <div className="mt-4 p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/60 dark:border-purple-700/40">
+                      <div className="mt-4 p-4 bg-white/60 rounded-lg border border-purple-200/60">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg">
                             {getRoleInfo(selectedRole).icon}
                           </span>
-                          <span className="font-semibold text-gray-900 dark:text-gray-100">
+                          <span className="font-semibold text-gray-900">
                             {getRoleInfo(selectedRole).label}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600">
                           {selectedRole === 'admin' &&
                             'Complete access to all system features, user management, and administrative controls.'}
                           {selectedRole === 'cr' &&
@@ -2090,13 +2030,13 @@ const UsersManagement = () => {
 
                   {/* Section Assignment (for CR role) */}
                   {selectedRole === 'cr' && (
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-200/40 dark:border-green-700/40">
-                      <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200/40">
+                      <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center gap-2">
                         🏫 Section Assignment
                       </h3>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
                           Assign Section to CR
                         </label>
                         <Select
@@ -2105,15 +2045,15 @@ const UsersManagement = () => {
                             setValue('sectionId', value)
                           }
                         >
-                          <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700/40 hover:border-green-300 dark:hover:border-green-600 transition-all duration-300">
+                          <SelectTrigger className="h-12 bg-white/80 border-gray-200/60 hover:border-green-300 transition-all duration-300">
                             <SelectValue placeholder="Select a section..." />
                           </SelectTrigger>
-                          <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/40">
+                          <SelectContent className="bg-white/95 backdrop-blur-sm border-gray-200/60">
                             {sections.map((section) => (
                               <SelectItem
                                 key={section._id}
                                 value={section._id}
-                                className="hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
+                                className="hover:bg-green-50 cursor-pointer"
                               >
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
@@ -2130,8 +2070,8 @@ const UsersManagement = () => {
                         </Select>
 
                         {selectedSectionId && (
-                          <div className="mt-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-green-200/60 dark:border-green-700/40">
-                            <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                          <div className="mt-3 p-3 bg-white/60 rounded-lg border border-green-200/60">
+                            <p className="text-sm text-green-700 flex items-center gap-2">
                               ✅ Section assigned successfully! The CR will be
                               able to manage attendance for this section.
                             </p>
@@ -2142,7 +2082,7 @@ const UsersManagement = () => {
                   )}
 
                   {/* Form Actions */}
-                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200/60 dark:border-gray-700/40">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200/60">
                     <Button
                       type="button"
                       variant="outline"
@@ -2151,7 +2091,7 @@ const UsersManagement = () => {
                         setEditingUser(null)
                         reset()
                       }}
-                      className="order-2 sm:order-1 h-12 px-6 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700/50"
+                      className="order-2 sm:order-1 h-12 px-6 border-gray-300 hover:bg-gray-50"
                     >
                       Cancel
                     </Button>
@@ -2170,30 +2110,30 @@ const UsersManagement = () => {
       </div>
       {/* Users Table Section */}
       {isLoading ? (
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           <div className="p-6 space-y-4">
             {[1, 2, 3, 4, 5].map((index) => (
               <div key={index} className="flex items-center space-x-4 py-3">
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-24"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse flex-1"></div>
-                <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full animate-pulse w-16"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-20"></div>
-                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-20"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-24"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse flex-1"></div>
+                <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full animate-pulse w-16"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-20"></div>
+                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-20"></div>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           {users.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 👥
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
                 No Users Found
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 mb-6">
                 Start by creating your first user account to manage the system.
               </p>
               <Button
@@ -2217,7 +2157,7 @@ const UsersManagement = () => {
                   return (
                     <div
                       key={user._id}
-                      className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 rounded-xl p-4 shadow-lg border border-gray-200/60 dark:border-gray-700/40 hover:shadow-xl transition-all duration-300"
+                      className="bg-gradient-to-br from-white to-gray-50/50 rounded-xl p-4 shadow-lg border border-gray-200/60 hover:shadow-xl transition-all duration-300"
                       style={{
                         animationDelay: `${index * 100}ms`,
                         animation: 'fadeInUp 0.6s ease-out forwards',
@@ -2231,7 +2171,7 @@ const UsersManagement = () => {
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            <h3 className="font-semibold text-gray-900">
                               {user.name}
                             </h3>
                             <div
@@ -2247,7 +2187,7 @@ const UsersManagement = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleEdit(user)}
-                            className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20"
+                            className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -2264,19 +2204,19 @@ const UsersManagement = () => {
 
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="text-gray-500">
                             📧
                           </span>
-                          <span className="text-gray-900 dark:text-gray-100">
+                          <span className="text-gray-900">
                             {user.email}
                           </span>
                         </div>
                         {user.sectionId && (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-500 dark:text-gray-400">
+                            <span className="text-gray-500">
                               🏫
                             </span>
-                            <span className="text-gray-900 dark:text-gray-100">
+                            <span className="text-gray-900">
                               {typeof user.sectionId === 'string'
                                 ? user.sectionId
                                 : `${user.sectionId.name} (${user.sectionId.code})`}
@@ -2284,10 +2224,10 @@ const UsersManagement = () => {
                           </div>
                         )}
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="text-gray-500">
                             📅
                           </span>
-                          <span className="text-gray-900 dark:text-gray-100">
+                          <span className="text-gray-900">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </span>
                         </div>
@@ -2301,23 +2241,23 @@ const UsersManagement = () => {
               <div className="hidden lg:block overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 border-b border-gray-200/60 dark:border-gray-600/40">
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100 py-4">
+                    <TableRow className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
+                      <TableHead className="font-bold text-gray-900 py-4">
                         👤 Name
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         📧 Email
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         🎭 Role
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         🏫 Section
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                      <TableHead className="font-bold text-gray-900">
                         📅 Created
                       </TableHead>
-                      <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                      <TableHead className="font-bold text-gray-900 text-center">
                         ⚙️ Actions
                       </TableHead>
                     </TableRow>
@@ -2328,10 +2268,10 @@ const UsersManagement = () => {
                       return (
                         <TableRow
                           key={user._id}
-                          className={`hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-purple-50/50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all duration-300 border-b border-gray-100/60 dark:border-gray-700/40 ${
+                          className={`hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-purple-50/50 transition-all duration-300 border-b border-gray-100/60 ${
                             index % 2 === 0
-                              ? 'bg-white/40 dark:bg-gray-800/40'
-                              : 'bg-gray-50/40 dark:bg-gray-900/40'
+                              ? 'bg-white/40'
+                              : 'bg-gray-50/40'
                           }`}
                           style={{
                             animationDelay: `${index * 100}ms`,
@@ -2351,7 +2291,7 @@ const UsersManagement = () => {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-300">
+                          <TableCell className="text-gray-600">
                             {user.email}
                           </TableCell>
                           <TableCell>
@@ -2362,7 +2302,7 @@ const UsersManagement = () => {
                               {roleInfo.label}
                             </span>
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-300">
+                          <TableCell className="text-gray-600">
                             {user.sectionId ? (
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
@@ -2371,12 +2311,12 @@ const UsersManagement = () => {
                                   : `${user.sectionId.name} (${user.sectionId.code})`}
                               </div>
                             ) : (
-                              <span className="text-gray-400 dark:text-gray-500">
+                              <span className="text-gray-400">
                                 -
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-300">
+                          <TableCell className="text-gray-600">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
@@ -2385,7 +2325,7 @@ const UsersManagement = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEdit(user)}
-                                className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-blue-900/20 transition-all duration-200"
+                                className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -2440,25 +2380,25 @@ const AttendanceManagement = () => {
     return (
       <div className="space-y-6">
         {/* Header Skeleton */}
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-3">
-              <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse w-64"></div>
-              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-96"></div>
+              <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse w-64"></div>
+              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-96"></div>
             </div>
-            <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse w-32"></div>
+            <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse w-32"></div>
           </div>
         </div>
 
         {/* Table Skeleton */}
-        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
           <div className="p-6 space-y-4">
             {[1, 2, 3, 4, 5].map((index) => (
               <div key={index} className="flex items-center space-x-4 py-3">
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse flex-1"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-20"></div>
-                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse w-16"></div>
-                <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-full animate-pulse w-16"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse flex-1"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-20"></div>
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-16"></div>
+                <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full animate-pulse w-16"></div>
               </div>
             ))}
           </div>
@@ -2472,16 +2412,16 @@ const AttendanceManagement = () => {
     console.error('[ATTENDANCE MANAGEMENT] API Error:', error)
     return (
       <div className="space-y-6">
-        <div className="bg-red-50 dark:bg-red-900/20 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-red-200/60 dark:border-red-700/40">
+        <div className="bg-red-50 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-red-200/60">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
               ⚠️
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
+              <h3 className="text-lg font-semibold text-red-800">
                 Error Loading Attendance Records
               </h3>
-              <p className="text-red-600 dark:text-red-300">
+              <p className="text-red-600">
                 {error && 'data' in error
                   ? `API Error: ${error.status} - ${JSON.stringify(error.data)}`
                   : 'message' in error
@@ -2490,9 +2430,9 @@ const AttendanceManagement = () => {
               </p>
             </div>
           </div>
-          <div className="text-sm text-red-700 dark:text-red-300">
+          <div className="text-sm text-red-700">
             <p>Debug Info:</p>
-            <pre className="bg-red-100 dark:bg-red-900/40 p-2 rounded mt-2 overflow-auto">
+            <pre className="bg-red-100 p-2 rounded mt-2 overflow-auto">
               {JSON.stringify(error, null, 2)}
             </pre>
           </div>
@@ -2520,17 +2460,17 @@ const AttendanceManagement = () => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Enhanced Header with Statistics */}
-      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 dark:border-gray-700/40 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200/60 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-gray-800/10 opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
 
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-2">
                 📊 Attendance Records
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base font-medium">
+              <p className="text-gray-600 text-sm sm:text-base font-medium">
                 View and manage attendance records with detailed insights
               </p>
             </div>
@@ -2557,7 +2497,7 @@ const AttendanceManagement = () => {
       </div>
 
       {/* Modern Responsive Table */}
-      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+      <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
         {/* Mobile Cards View (Hidden on larger screens) */}
         <div className="block lg:hidden">
           <div className="p-4 space-y-4">
@@ -2574,10 +2514,10 @@ const AttendanceManagement = () => {
               return (
                 <div
                   key={record._id}
-                  className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 rounded-xl p-4 shadow-lg border border-gray-200/60 dark:border-gray-700/40 hover:shadow-xl transition-all duration-300"
+                  className="bg-gradient-to-br from-white to-gray-50/50 rounded-xl p-4 shadow-lg border border-gray-200/60 hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="text-sm font-semibold text-gray-900">
                       {new Date(record.date).toLocaleDateString()}
                     </div>
                     <span
@@ -2595,38 +2535,38 @@ const AttendanceManagement = () => {
 
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500">
                         Section:
                       </span>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                      <div className="font-medium text-gray-900">
                         {typeof record.sectionId === 'string'
                           ? record.sectionId
                           : record.sectionId.name}
                       </div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500">
                         Course:
                       </span>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                      <div className="font-medium text-gray-900">
                         {typeof record.courseId === 'string'
                           ? record.courseId
                           : record.courseId.name}
                       </div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500">
                         Present:
                       </span>
-                      <div className="font-bold text-green-600 dark:text-green-400">
+                      <div className="font-bold text-green-600">
                         {presentStudents}/{totalStudents}
                       </div>
                     </div>
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500">
                         Taken by:
                       </span>
-                      <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div className="font-medium text-gray-900 truncate">
                         {typeof record.takenBy === 'string'
                           ? record.takenBy
                           : record.takenBy.name}
@@ -2643,29 +2583,29 @@ const AttendanceManagement = () => {
         <div className="hidden lg:block overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 border-b border-gray-200/60 dark:border-gray-600/40">
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100 py-4">
+              <TableRow className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200/60">
+                <TableHead className="font-bold text-gray-900 py-4">
                   📅 Date
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                <TableHead className="font-bold text-gray-900">
                   🏫 Section
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                <TableHead className="font-bold text-gray-900">
                   📚 Course
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                <TableHead className="font-bold text-gray-900 text-center">
                   👥 Total
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                <TableHead className="font-bold text-gray-900 text-center">
                   ✅ Present
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                <TableHead className="font-bold text-gray-900 text-center">
                   ❌ Absent
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100 text-center">
+                <TableHead className="font-bold text-gray-900 text-center">
                   📊 Rate
                 </TableHead>
-                <TableHead className="font-bold text-gray-900 dark:text-gray-100">
+                <TableHead className="font-bold text-gray-900">
                   👤 Taken By
                 </TableHead>
               </TableRow>
@@ -2684,10 +2624,10 @@ const AttendanceManagement = () => {
                 return (
                   <TableRow
                     key={record._id}
-                    className={`hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/50 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 transition-all duration-300 border-b border-gray-100/60 dark:border-gray-700/40 ${
+                    className={`hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/50 transition-all duration-300 border-b border-gray-100/60 ${
                       index % 2 === 0
-                        ? 'bg-white/40 dark:bg-gray-800/40'
-                        : 'bg-gray-50/40 dark:bg-gray-900/40'
+                        ? 'bg-white/40'
+                        : 'bg-gray-50/40'
                     }`}
                   >
                     <TableCell className="font-medium py-4">
@@ -2706,13 +2646,13 @@ const AttendanceManagement = () => {
                         ? record.courseId
                         : record.courseId.name}
                     </TableCell>
-                    <TableCell className="text-center font-bold text-gray-900 dark:text-gray-100">
+                    <TableCell className="text-center font-bold text-gray-900">
                       {totalStudents}
                     </TableCell>
-                    <TableCell className="text-center font-bold text-green-600 dark:text-green-400">
+                    <TableCell className="text-center font-bold text-green-600">
                       {presentStudents}
                     </TableCell>
-                    <TableCell className="text-center font-bold text-red-600 dark:text-red-400">
+                    <TableCell className="text-center font-bold text-red-600">
                       {totalStudents - presentStudents}
                     </TableCell>
                     <TableCell className="text-center">
@@ -2756,10 +2696,10 @@ const AttendanceManagement = () => {
             <div className="w-16 h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="h-8 w-8 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No Attendance Records Found
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500">
               Attendance records will appear here once they are created by Class
               Representatives.
             </p>
