@@ -7,8 +7,10 @@ import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ email }).select('+passwordHash').populate('sectionId', 'name code');
+    // Check if user exists (include 2FA fields)
+    const user = await User.findOne({ email })
+        .select('+passwordHash +twoFactorEnabled +twoFactorSecret')
+        .populate('sectionId', 'name code');
 
     if (!user) {
         throw new AppError('Invalid email or password', 401);
@@ -21,7 +23,22 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
         throw new AppError('Invalid email or password', 401);
     }
 
-    // Generate tokens
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+        // Don't issue tokens yet, require 2FA verification
+        const response: ApiResponse<{ requires2FA: boolean; email: string }> = {
+            success: true,
+            data: {
+                requires2FA: true,
+                email: user.email,
+            },
+            message: '2FA verification required. Please enter your authenticator code.',
+        };
+        res.status(200).json(response);
+        return;
+    }
+
+    // Generate tokens (no 2FA required)
     const tokens = generateTokens({
         userId: user._id,
         email: user.email,

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Login Page Component
  *
@@ -18,11 +20,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { TwoFactorVerify } from '@/components/TwoFactorVerify'
 import { useAuth } from '@/context/AuthContext'
 import { useLoginMutation } from '@/lib/apiSlice'
+import { setCredentials } from '@/lib/authSlice'
 import { getDashboardRoute } from '@/routes'
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 // Icons as components for better organization
@@ -80,7 +85,10 @@ export function Login() {
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [loginType, setLoginType] = useState<'admin' | 'student'>('admin')
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [twoFAEmail, setTwoFAEmail] = useState('')
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   // Authentication hooks
   const auth = useAuth()
@@ -93,6 +101,17 @@ export function Login() {
     return <Navigate to={dashboardRoute} replace />
   }
 
+  // Handle 2FA success
+  const handle2FASuccess = (data: { user: any; accessToken: string; refreshToken: string }) => {
+    dispatch(setCredentials({
+      user: data.user,
+      accessToken: data.accessToken,
+    }))
+    toast.success('Login successful!')
+    const dashboardRoute = getDashboardRoute(data.user.role)
+    navigate(dashboardRoute)
+  }
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,16 +122,60 @@ export function Login() {
       if (loginType === 'student') {
         userData = await authStudentLogin(studentId, password)
         toast.success('Student login successful!')
+        const dashboardRoute = getDashboardRoute(userData.role)
+        navigate(dashboardRoute)
       } else {
-        userData = await authLogin(email, password)
-        toast.success('Login successful!')
-      }
+        // Check if 2FA is required
+        const API_URL = import.meta.env.VITE_API_URL || 'https://crportal-nu.vercel.app/api'
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+        const data = await response.json()
 
-      const dashboardRoute = getDashboardRoute(userData.role)
-      navigate(dashboardRoute)
+        if (data.success && data.data?.requires2FA) {
+          // 2FA required
+          setTwoFAEmail(data.data.email)
+          setRequires2FA(true)
+          return
+        }
+
+        if (data.success && data.data?.accessToken) {
+          // No 2FA, proceed normally
+          dispatch(setCredentials({
+            user: data.data.user,
+            accessToken: data.data.accessToken,
+          }))
+          toast.success('Login successful!')
+          const dashboardRoute = getDashboardRoute(data.data.user.role)
+          navigate(dashboardRoute)
+          return
+        }
+
+        throw new Error(data.message || 'Login failed')
+      }
     } catch {
       toast.error('Login failed. Please check your credentials.')
     }
+  }
+
+  // Show 2FA verification
+  if (requires2FA) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <BackgroundDecorations />
+        <TwoFactorVerify
+          email={twoFAEmail}
+          onSuccess={handle2FASuccess}
+          onCancel={() => {
+            setRequires2FA(false)
+            setTwoFAEmail('')
+          }}
+        />
+        <FooterCredit />
+      </div>
+    )
   }
 
   return (
@@ -369,6 +432,18 @@ const LoginForm = ({
         </div>
       )}
     </Button>
+
+    {/* Forgot Password Link - Only show for admin/CR login */}
+    {loginType === 'admin' && (
+      <div className="text-center">
+        <Link
+          to="/forgot-password"
+          className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 hover:underline"
+        >
+          Forgot your password?
+        </Link>
+      </div>
+    )}
   </form>
 )
 

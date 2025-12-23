@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { softDeletePlugin, ISoftDeleteDocument } from '../utils/softDelete';
 
 export interface IAttendee {
     studentId: mongoose.Types.ObjectId;
@@ -6,7 +7,7 @@ export interface IAttendee {
     note?: string;
 }
 
-export interface IAttendanceRecord extends Document {
+export interface IAttendanceRecord extends Document, ISoftDeleteDocument {
     _id: string;
     sectionId: mongoose.Types.ObjectId;
     courseId: mongoose.Types.ObjectId;
@@ -14,6 +15,9 @@ export interface IAttendanceRecord extends Document {
     takenBy: mongoose.Types.ObjectId;
     attendees: IAttendee[];
     pdfUrl?: string;
+    isDeleted: boolean;
+    deletedAt?: Date;
+    deletedBy?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -69,15 +73,18 @@ const attendanceRecordSchema = new Schema<IAttendanceRecord>(
     }
 );
 
+// Apply soft delete plugin
+attendanceRecordSchema.plugin(softDeletePlugin);
+
 // Index for faster queries
 attendanceRecordSchema.index({ sectionId: 1, courseId: 1, date: 1 });
 attendanceRecordSchema.index({ sectionId: 1, date: -1 });
 attendanceRecordSchema.index({ courseId: 1, date: -1 });
 attendanceRecordSchema.index({ takenBy: 1, date: -1 });
 
-// Ensure only one attendance record per section, course, and date
+// Ensure only one attendance record per section, course, and date (only among non-deleted)
 attendanceRecordSchema.index(
-    { sectionId: 1, courseId: 1, date: 1 },
+    { sectionId: 1, courseId: 1, date: 1, isDeleted: 1 },
     { unique: true }
 );
 

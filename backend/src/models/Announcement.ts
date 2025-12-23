@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { softDeletePlugin, ISoftDeleteDocument } from '../utils/softDelete';
 
 export type AnnouncementType = 
     | 'quiz-1'
@@ -19,7 +20,7 @@ export interface IAnnouncementDetails {
     room?: string;
 }
 
-export interface IAnnouncement extends Document {
+export interface IAnnouncement extends Document, ISoftDeleteDocument {
     _id: string;
     title: string;
     type: AnnouncementType;
@@ -32,6 +33,9 @@ export interface IAnnouncement extends Document {
     emailSentAt?: Date;
     emailRecipients?: string[];
     details?: IAnnouncementDetails;
+    isDeleted: boolean;
+    deletedAt?: Date;
+    deletedBy?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -111,6 +115,9 @@ const announcementSchema = new Schema<IAnnouncement>(
         timestamps: true,
     }
 );
+
+// Apply soft delete plugin
+announcementSchema.plugin(softDeletePlugin);
 
 // Indexes for faster queries
 announcementSchema.index({ courseId: 1, createdAt: -1 });

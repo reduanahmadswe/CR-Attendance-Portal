@@ -554,3 +554,229 @@ export const verifyEmailConfig = async (): Promise<boolean> => {
         return false;
     }
 };
+
+/**
+ * Send password reset email
+ */
+export const sendPasswordResetEmail = async (
+    email: string,
+    resetToken: string,
+    userName: string
+): Promise<boolean> => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+    const expiryTime = '1 hour';
+
+    const subject = 'Password Reset Request - CR Attendance Portal';
+
+    const text = `
+Hello ${userName},
+
+You requested to reset your password for your CR Attendance Portal account.
+
+Click the link below to reset your password:
+${resetLink}
+
+This link will expire in ${expiryTime}.
+
+If you didn't request this password reset, please ignore this email or contact support if you have concerns.
+
+Best regards,
+CR Attendance Portal Team
+`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+    <table cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔐 Password Reset</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 40px;">
+                <p style="color: #333; font-size: 16px; line-height: 1.6;">Hello <strong>${userName}</strong>,</p>
+                
+                <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                    You requested to reset your password for your CR Attendance Portal account.
+                </p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${resetLink}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                        Reset Password
+                    </a>
+                </div>
+                
+                <p style="color: #999; font-size: 14px; line-height: 1.6;">
+                    This link will expire in <strong>${expiryTime}</strong>.
+                </p>
+                
+                <p style="color: #999; font-size: 14px; line-height: 1.6;">
+                    If you didn't request this password reset, please ignore this email or contact support if you have concerns.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <p style="color: #999; font-size: 12px; text-align: center;">
+                    If the button doesn't work, copy and paste this link:<br>
+                    <a href="${resetLink}" style="color: #6366f1; word-break: break-all;">${resetLink}</a>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+                <p style="color: #999; font-size: 12px; margin: 0;">
+                    © ${new Date().getFullYear()} CR Attendance Portal. All rights reserved.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+
+    return sendEmail({ to: email, subject, text, html });
+};
+
+/**
+ * Send password changed confirmation email
+ */
+export const sendPasswordChangedEmail = async (
+    email: string,
+    userName: string
+): Promise<boolean> => {
+    const subject = 'Password Changed Successfully - CR Attendance Portal';
+
+    const text = `
+Hello ${userName},
+
+Your password for CR Attendance Portal has been changed successfully.
+
+If you did not make this change, please contact support immediately.
+
+Best regards,
+CR Attendance Portal Team
+`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+    <table cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">✅ Password Changed</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 40px;">
+                <p style="color: #333; font-size: 16px; line-height: 1.6;">Hello <strong>${userName}</strong>,</p>
+                
+                <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                    Your password for CR Attendance Portal has been changed successfully.
+                </p>
+                
+                <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="color: #92400e; font-size: 14px; margin: 0;">
+                        <strong>⚠️ Security Notice:</strong> If you did not make this change, please contact support immediately.
+                    </p>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+                <p style="color: #999; font-size: 12px; margin: 0;">
+                    © ${new Date().getFullYear()} CR Attendance Portal. All rights reserved.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+
+    return sendEmail({ to: email, subject, text, html });
+};
+
+/**
+ * Send 2FA enabled confirmation email
+ */
+export const send2FAEnabledEmail = async (
+    email: string,
+    userName: string
+): Promise<boolean> => {
+    const subject = '2FA Enabled - CR Attendance Portal';
+
+    const text = `
+Hello ${userName},
+
+Two-Factor Authentication (2FA) has been enabled on your CR Attendance Portal account.
+
+Your account is now more secure. You will need to enter a code from your authenticator app each time you log in.
+
+Make sure to save your backup codes in a safe place!
+
+If you did not enable 2FA, please contact support immediately.
+
+Best regards,
+CR Attendance Portal Team
+`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;">
+    <table cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔒 2FA Enabled</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 40px;">
+                <p style="color: #333; font-size: 16px; line-height: 1.6;">Hello <strong>${userName}</strong>,</p>
+                
+                <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                    Two-Factor Authentication (2FA) has been enabled on your CR Attendance Portal account.
+                </p>
+                
+                <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="color: #065f46; font-size: 14px; margin: 0;">
+                        <strong>🛡️ Your account is now more secure!</strong><br>
+                        You will need to enter a code from your authenticator app each time you log in.
+                    </p>
+                </div>
+                
+                <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                    <strong>Important:</strong> Make sure to save your backup codes in a safe place!
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+                <p style="color: #999; font-size: 12px; margin: 0;">
+                    © ${new Date().getFullYear()} CR Attendance Portal. All rights reserved.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+
+    return sendEmail({ to: email, subject, text, html });
+};

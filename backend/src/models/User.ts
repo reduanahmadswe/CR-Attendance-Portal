@@ -1,13 +1,25 @@
 import bcrypt from 'bcryptjs';
 import mongoose, { Document, Schema } from 'mongoose';
+import { softDeletePlugin, ISoftDeleteDocument } from '../utils/softDelete';
 
-export interface IUser extends Document {
+export interface IUser extends Document, ISoftDeleteDocument {
     _id: string;
     name: string;
     email: string;
     passwordHash: string;
     role: 'admin' | 'cr' | 'instructor' | 'viewer';
     sectionId?: mongoose.Types.ObjectId;
+    // 2FA fields
+    twoFactorSecret?: string;
+    twoFactorEnabled: boolean;
+    twoFactorBackupCodes?: string[];
+    // Password reset fields
+    passwordResetToken?: string;
+    passwordResetExpires?: Date;
+    // Soft delete fields
+    isDeleted: boolean;
+    deletedAt?: Date;
+    deletedBy?: string;
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
@@ -45,6 +57,28 @@ const userSchema = new Schema<IUser>(
                 return this.role === 'cr';
             },
         },
+        // 2FA fields
+        twoFactorSecret: {
+            type: String,
+            select: false, // Don't include in queries by default
+        },
+        twoFactorEnabled: {
+            type: Boolean,
+            default: false,
+        },
+        twoFactorBackupCodes: {
+            type: [String],
+            select: false,
+        },
+        // Password reset fields
+        passwordResetToken: {
+            type: String,
+            select: false,
+        },
+        passwordResetExpires: {
+            type: Date,
+            select: false,
+        },
     },
     {
         timestamps: true,
@@ -73,11 +107,18 @@ userSchema.methods.comparePassword = async function (candidatePassword: string):
     return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
-// Remove password from JSON output
+// Remove sensitive fields from JSON output
 userSchema.methods.toJSON = function () {
     const userObject = this.toObject();
     delete userObject.passwordHash;
+    delete userObject.twoFactorSecret;
+    delete userObject.twoFactorBackupCodes;
+    delete userObject.passwordResetToken;
+    delete userObject.passwordResetExpires;
     return userObject;
 };
+
+// Apply soft delete plugin
+userSchema.plugin(softDeletePlugin);
 
 export const User = mongoose.model<IUser>('User', userSchema);

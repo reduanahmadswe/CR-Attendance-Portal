@@ -4,7 +4,8 @@ export const ROUTES = {
     AUTH: {
         LOGIN: '/auth/login',
         REGISTER: '/auth/register',
-        FORGOT_PASSWORD: '/auth/forgot-password',
+        FORGOT_PASSWORD: '/forgot-password',
+        RESET_PASSWORD: '/reset-password',
     },
 
     // Dashboard

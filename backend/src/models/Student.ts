@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcryptjs from 'bcryptjs';
+import { softDeletePlugin, ISoftDeleteDocument } from '../utils/softDelete';
 
-export interface IStudent extends Document {
+export interface IStudent extends Document, ISoftDeleteDocument {
     _id: string;
     studentId: string;
     name: string;
@@ -10,6 +11,9 @@ export interface IStudent extends Document {
     isPasswordDefault: boolean; // Track if using default password
     sectionId: mongoose.Types.ObjectId;
     courses: mongoose.Types.ObjectId[];
+    isDeleted: boolean;
+    deletedAt?: Date;
+    deletedBy?: string;
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
@@ -96,13 +100,16 @@ studentSchema.methods.comparePassword = async function (candidatePassword: strin
     }
 };
 
+// Apply soft delete plugin
+studentSchema.plugin(softDeletePlugin);
+
 // Index for faster queries
 studentSchema.index({ studentId: 1 });
 studentSchema.index({ sectionId: 1 });
 studentSchema.index({ email: 1 });
 studentSchema.index({ sectionId: 1, studentId: 1 });
 
-// Ensure student email is unique within a section
-studentSchema.index({ sectionId: 1, email: 1 }, { unique: true });
+// Ensure student email is unique within a section (only among non-deleted)
+studentSchema.index({ sectionId: 1, email: 1, isDeleted: 1 }, { unique: true });
 
 export const Student = mongoose.model<IStudent>('Student', studentSchema);

@@ -10,9 +10,16 @@ router.use(authenticate);
 // Section CRUD (Admin only)
 router.post('/', authorize('admin'), validate(schemas.sectionCreate), sectionController.createSection);
 router.get('/', validateQuery(schemas.pagination), sectionController.getSections);
+
+// Deleted sections (Admin only) - must be before :id route
+router.get('/deleted', authorize('admin'), sectionController.getDeletedSections);
+
 router.get('/:id', sectionController.getSection);
 router.put('/:id', authorize('admin'), validate(schemas.sectionUpdate), sectionController.updateSection);
 router.delete('/:id', authorize('admin'), sectionController.deleteSection);
+
+// Restore soft-deleted section (Admin only)
+router.post('/:id/restore', authorize('admin'), sectionController.restoreSection);
 
 // Section courses (Admin and CR for their section)
 router.get('/:sectionId/courses', authorizeSection, validateQuery(schemas.pagination), sectionController.getSectionCourses);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QRGenerator } from '@/components/QRGenerator'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,7 @@ import {
   History,
   Plus,
   QrCode,
+  Settings,
   Users,
   XCircle,
 } from 'lucide-react'
@@ -494,6 +496,13 @@ export function CRDashboard() {
               bgColor="bg-pink-50"
               onClick={() => navigate('/announcements')}
             />
+            <QuickAccessCard
+              icon={<Settings className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />}
+              label="Security"
+              color="gray"
+              bgColor="bg-gray-50"
+              onClick={() => navigate('/settings/security')}
+            />
           </div>
         </div>
 
@@ -718,135 +727,7 @@ export function CRDashboard() {
   )
 }
 
-// CR Stats Cards Component
-const CRStatsCards = ({
-  students,
-  attendance,
-  courses,
-  isLoading = false,
-}: {
-  students: Student[]
-  attendance: AttendanceRecord[]
-  courses: Course[]
-  isLoading?: boolean
-}) => {
-  const todayAttendance = attendance.filter((record) => {
-    const recordDate = new Date(record.date)
-    const today = new Date()
-    return recordDate.toDateString() === today.toDateString()
-  })
 
-  const stats = [
-    {
-      title: 'Total Students',
-      value: students.length,
-      icon: Users,
-      gradient: 'from-blue-500 to-cyan-500',
-      bgGradient: 'from-blue-50 to-cyan-50',
-      darkBgGradient: 'from-blue-900/40 to-cyan-900/40',
-      description: 'Enrolled in section',
-    },
-    {
-      title: 'Available Courses',
-      value: courses.length,
-      icon: BookOpen,
-      gradient: 'from-green-500 to-emerald-500',
-      bgGradient: 'from-green-50 to-emerald-50',
-      darkBgGradient: 'from-green-900/40 to-emerald-900/40',
-      description: 'Active courses',
-    },
-    {
-      title: "Today's Sessions",
-      value: todayAttendance.length,
-      icon: Clock,
-      gradient: 'from-purple-500 to-pink-500',
-      bgGradient: 'from-purple-50 to-pink-50',
-      darkBgGradient: 'from-purple-900/40 to-pink-900/40',
-      description: 'Sessions recorded',
-    },
-    {
-      title: 'Total Records',
-      value: attendance.length,
-      icon: CheckCircle,
-      gradient: 'from-orange-500 to-red-500',
-      bgGradient: 'from-orange-50 to-red-50',
-      darkBgGradient: 'from-orange-900/40 to-red-900/40',
-      description: 'All-time records',
-    },
-  ]
-
-  // Loading skeleton component
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
-        {[1, 2, 3, 4].map((index) => (
-          <Card
-            key={index}
-            className="overflow-hidden border border-gray-200/60 shadow-xl bg-white/80 backdrop-blur-sm"
-            style={{
-              animationDelay: `${index * 150}ms`,
-              animation: 'fadeInUp 0.8s ease-out forwards',
-            }}
-          >
-            <CardContent className="p-3 sm:p-4 lg:p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2 sm:space-y-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg lg:rounded-xl animate-pulse"></div>
-                  <div className="space-y-1 sm:space-y-2">
-                    <div className="h-3 sm:h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-3/4"></div>
-                    <div className="h-5 sm:h-6 lg:h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-1/2"></div>
-                    <div className="h-2 sm:h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded animate-pulse w-full hidden sm:block"></div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <>
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 xl:gap-8">
-        {stats.map((stat, index) => (
-          <Card
-            key={index}
-            className={`group overflow-hidden border border-gray-200/60 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm hover:border-gray-300/80 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500`}
-            style={{
-              animationDelay: `${index * 150}ms`,
-              animation: 'fadeInUp 0.8s ease-out forwards',
-            }}
-          >
-            <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div
-                    className={`inline-flex p-2 sm:p-2.5 lg:p-3 rounded-lg lg:rounded-xl bg-gradient-to-r ${stat.gradient} shadow-lg mb-2 sm:mb-3 lg:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 group-hover:shadow-xl`}
-                  >
-                    <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                  </div>
-                  <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-2 group-hover:text-gray-800 transition-colors duration-300">
-                    {stat.title}
-                  </p>
-                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 group-hover:scale-105 transition-transform duration-300">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs text-gray-600 font-medium hidden sm:block lg:block">
-                    {stat.description}
-                  </p>
-                </div>
-
-                {/* Decorative corner element */}
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </>
-  )
-}
 
 // Download Course Attendance Section Component
 const DownloadCourseAttendanceSection = ({

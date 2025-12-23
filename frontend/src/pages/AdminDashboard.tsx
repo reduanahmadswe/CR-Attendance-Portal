@@ -86,6 +86,7 @@ import {
   GraduationCap,
   History,
   Plus,
+  Settings,
   Shield,
   Trash2,
   Users,
@@ -238,6 +239,13 @@ function AdminDashboard() {
               color="teal"
               bgColor="bg-teal-50"
               onClick={() => navigate('/reports/attendance-history')}
+            />
+            <QuickAccessCard
+              icon={<Settings className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />}
+              label="Security"
+              color="gray"
+              bgColor="bg-gray-50"
+              onClick={() => navigate('/settings/security')}
             />
           </div>
         </div>

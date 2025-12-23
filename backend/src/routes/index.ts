@@ -7,6 +7,7 @@ import qrCodeRoutes from './qrCodeRoutes';
 import sectionRoutes from './sectionRoutes';
 import studentRoutes from './studentRoutes';
 import userRoutes from './userRoutes';
+import backupRoutes from './backupRoutes';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use('/attendance', attendanceRoutes);
 router.use('/users', userRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/qr-attendance', qrCodeRoutes);
+router.use('/admin/backups', backupRoutes);
 
 export { default as announcementRoutes } from './announcementRoutes';
 export { default as attendanceRoutes } from './attendanceRoutes';
@@ -28,5 +30,6 @@ export { default as qrCodeRoutes } from './qrCodeRoutes';
 export { default as sectionRoutes } from './sectionRoutes';
 export { default as studentRoutes } from './studentRoutes';
 export { default as userRoutes } from './userRoutes';
+export { default as backupRoutes } from './backupRoutes';
 export { router };
 

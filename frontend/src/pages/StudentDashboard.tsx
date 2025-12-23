@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   History,
   QrCode,
+  Settings,
   User,
   XCircle,
   KeyRound,
@@ -268,10 +269,10 @@ export function StudentDashboard() {
               onClick={() => setIsPasswordModalOpen(true)}
             />
             <QuickAccessCard
-              icon={<User className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" />}
-              label="Profile"
-              bgColor="bg-indigo-50"
-              onClick={() => {}}
+              icon={<Settings className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />}
+              label="Security"
+              bgColor="bg-gray-50"
+              onClick={() => navigate('/settings/security')}
             />
           </div>
         </div>

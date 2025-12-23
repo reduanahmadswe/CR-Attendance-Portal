@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Course, Section, Student, User } from '../models';
 import { ApiResponse, PaginatedResponse } from '../types';
 import { AppError, asyncHandler } from '../utils/errorHandler';
+import { logCreate, logUpdate, logSoftDelete, logRestore } from '../utils/auditService';
 
 export const createSection = asyncHandler(async (req: Request, res: Response) => {
     const { name, code, description } = req.body;
@@ -11,6 +12,9 @@ export const createSection = asyncHandler(async (req: Request, res: Response) =>
         code,
         description,
     });
+
+    // Log audit
+    await logCreate('sections', section._id, req.user?.userId, section.toObject(), req);
 
     const response: ApiResponse<any> = {
         success: true,
@@ -22,18 +26,24 @@ export const createSection = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const getSections = asyncHandler(async (req: Request, res: Response) => {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', includeDeleted } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
     const sortField = sortBy as string;
     const sortDirection = (sortOrder === 'asc' ? 1 : -1) as 1 | -1;
 
+    // Build query - by default excludes soft-deleted items
+    const query: any = {};
+    if (includeDeleted === 'true') {
+        query.includeDeleted = true;
+    }
+
     const [sections, total] = await Promise.all([
-        Section.find()
+        Section.find(query)
             .sort({ [sortField]: sortDirection })
             .skip(skip)
             .limit(Number(limit)),
-        Section.countDocuments(),
+        Section.countDocuments(query),
     ]);
 
     const response: ApiResponse<PaginatedResponse<any>> = {
@@ -73,6 +83,12 @@ export const updateSection = asyncHandler(async (req: Request, res: Response) =>
     const { id } = req.params;
     const { name, code, description } = req.body;
 
+    if (!id) {
+        throw new AppError('Section ID is required', 400);
+    }
+
+    const previousData = await Section.findById(id);
+
     const section = await Section.findByIdAndUpdate(
         id,
         { name, code, description },
@@ -82,6 +98,10 @@ export const updateSection = asyncHandler(async (req: Request, res: Response) =>
     if (!section) {
         throw new AppError('Section not found', 404);
     }
+
+    // Log audit
+    const performedBy = req.user?.userId || 'system';
+    await logUpdate('sections', id, performedBy, previousData?.toObject() || {}, section.toObject(), req);
 
     const response: ApiResponse<any> = {
         success: true,
@@ -94,6 +114,11 @@ export const updateSection = asyncHandler(async (req: Request, res: Response) =>
 
 export const deleteSection = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { permanent } = req.query; // ?permanent=true for hard delete
+
+    if (!id) {
+        throw new AppError('Section ID is required', 400);
+    }
 
     console.log('[DELETE SECTION] Attempting to delete section:', id);
 
@@ -125,12 +150,67 @@ export const deleteSection = asyncHandler(async (req: Request, res: Response) =>
         throw new AppError(errorMessage, 400);
     }
 
-    await Section.findByIdAndDelete(id);
-    console.log('[DELETE SECTION] Section deleted successfully:', id);
+    // Soft delete by default, hard delete if permanent=true
+    const performedByUser = req.user?.userId || 'system';
+    if (permanent === 'true') {
+        await Section.findByIdAndDelete(id);
+        console.log('[DELETE SECTION] Section permanently deleted:', id);
+    } else {
+        // Soft delete
+        await section.softDelete(performedByUser);
+        await logSoftDelete('sections', id, performedByUser, req);
+        console.log('[DELETE SECTION] Section soft deleted:', id);
+    }
 
     const response: ApiResponse = {
         success: true,
-        message: 'Section deleted successfully',
+        message: permanent === 'true' ? 'Section permanently deleted' : 'Section deleted successfully',
+    };
+
+    res.status(200).json(response);
+});
+
+/**
+ * Restore a soft-deleted section
+ * POST /api/sections/:id/restore
+ */
+export const restoreSection = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (!id) {
+        throw new AppError('Section ID is required', 400);
+    }
+
+    // Find including deleted
+    const section = await Section.findOne({ _id: id, isDeleted: true, includeDeleted: true });
+
+    if (!section) {
+        throw new AppError('Deleted section not found', 404);
+    }
+
+    await section.restore();
+    const restoredBy = req.user?.userId || 'system';
+    await logRestore('sections', id, restoredBy, req);
+
+    const response: ApiResponse<any> = {
+        success: true,
+        data: section,
+        message: 'Section restored successfully',
+    };
+
+    res.status(200).json(response);
+});
+
+/**
+ * Get soft-deleted sections (trash)
+ * GET /api/sections/deleted
+ */
+export const getDeletedSections = asyncHandler(async (req: Request, res: Response) => {
+    const sections = await (Section as any).findDeleted();
+
+    const response: ApiResponse<any> = {
+        success: true,
+        data: sections,
     };
 
     res.status(200).json(response);

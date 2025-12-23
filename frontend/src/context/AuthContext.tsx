@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux'
 
 interface AuthContextType {
   user: User | null
+  accessToken: string | null
   isLoading: boolean
   isLoggingOut: boolean
   isAuthenticated: boolean
@@ -177,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
+    accessToken,
     isLoading: profileLoading || (isLoading && Boolean(accessToken)),
     isLoggingOut,
     isAuthenticated,

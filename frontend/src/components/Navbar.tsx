@@ -4,6 +4,7 @@ import {
   BookOpen,
   LogOut,
   Menu,
+  Settings,
   User,
   X,
 } from 'lucide-react';
@@ -115,6 +116,16 @@ export function Navbar() {
               </div>
             </div>
 
+            {/* Security Settings Button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate('/settings/security')}
+              className="hidden sm:flex items-center gap-2 h-9 px-3 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+
             {/* Logout Button */}
             <Button
               size="sm"
@@ -159,6 +170,19 @@ export function Navbar() {
                 </span>
               </div>
             </div>
+
+            {/* Mobile Security Settings */}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate('/settings/security');
+              }}
+              className="w-full flex items-center justify-center gap-2 h-11 mb-2 border-gray-200"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Security Settings</span>
+            </Button>
 
             {/* Mobile Logout */}
             <Button

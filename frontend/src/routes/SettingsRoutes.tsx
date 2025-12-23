@@ -1,3 +1,8 @@
+import { PrivateRoute } from '@/components/PrivateRoute'
+import { SecuritySettings } from '@/pages/SecuritySettings'
+import { Route } from 'react-router-dom'
+import { ROUTES } from './index'
+
 // Settings and user preference routes
 export const SettingsRoutes = () => (
   <>
@@ -21,14 +26,14 @@ export const SettingsRoutes = () => (
       }
     /> */}
 
-    {/* Future: Security Settings */}
-    {/* <Route
+    {/* Security Settings */}
+    <Route
       path={ROUTES.SETTINGS.SECURITY}
       element={
         <PrivateRoute>
           <SecuritySettings />
         </PrivateRoute>
       }
-    /> */}
+    />
   </>
 )
